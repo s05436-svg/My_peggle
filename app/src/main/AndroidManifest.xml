@@ -12,6 +12,27 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.My_peggle">
         <activity
+            android:name=".shapes.TriangleShape"
+            android:exported="false" />
+        <activity
+            android:name=".shapes.TeleportCircle"
+            android:exported="false" />
+        <activity
+            android:name=".shapes.CircleShape"
+            android:exported="false" />
+        <activity
+            android:name=".shapes.RectShape"
+            android:exported="false" />
+        <activity
+            android:name=".shapes.BaseShape"
+            android:exported="false" />
+        <activity
+            android:name=".ui.CustomSurfaceView"
+            android:exported="false" />
+        <activity
+            android:name=".ui.GameThread"
+            android:exported="false" />
+        <activity
             android:name=".GameActivity"
             android:exported="true">
             <intent-filter>
