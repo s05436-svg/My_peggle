@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.My_peggle">
         <activity
+            android:name=".shapes.ImageShape"
+            android:exported="false" />
+        <activity
             android:name=".shapes.TriangleShape"
             android:exported="false" />
         <activity

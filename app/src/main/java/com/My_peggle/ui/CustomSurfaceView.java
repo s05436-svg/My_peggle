@@ -8,6 +8,7 @@ import android.view.SurfaceView;
 import java.util.ArrayList;
 import java.util.List;
 // Import shapes
+import com.My_peggle.R;
 import com.My_peggle.shapes.BaseShape;
 import com.My_peggle.shapes.CircleShape;
 import com.My_peggle.shapes.RectShape;
@@ -41,6 +42,10 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
         // 1 Triangle
         shapes.add(new TriangleShape(500, 1000, 150, Color.YELLOW));
+
+        ImageShape myBall = new ImageShape(getContext(), 500, 500, 1000, 3500, R.drawable.ball_container);
+        myBall.setMovable(false);
+        shapes.add(myBall);
     }
 
     @Override
