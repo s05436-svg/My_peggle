@@ -15,8 +15,10 @@ public abstract class BaseShape {
     }
 
     public void setPosition(float x, float y) {
-        this.x = x;
-        this.y = y;
+        if(isMovable) {
+            this.x = x;
+            this.y = y;
+        }
     }
 
     public abstract void draw(Canvas canvas);
