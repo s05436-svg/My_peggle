@@ -55,12 +55,15 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         // 1 Triangle
         shapes.add(new TriangleShape(500, 1000, 150, Color.YELLOW));
 
-        float containerWidth = 450f;
+        float containerWidth = 1200f;
         // Stretch the height to be 20% taller than the screen
-        float containerHeight = viewHeight * 1.4f;
-        ImageShape myBall = new ImageShape(getContext(), 80, 500, containerWidth, containerHeight, R.drawable.ball_container);
+        float containerHeight = 9*viewHeight * 1.4f/10;
+        ImageShape myBall = new ImageShape(getContext(), 100, 500, containerWidth, containerHeight, R.drawable.ball_container);
         myBall.setMovable(false);
         shapes.add(myBall);
+        ImageShape myBall1 = new ImageShape(getContext(), 100, 500, containerWidth, containerHeight, R.drawable.ball_container_1_ball);
+        //myBall1.setMovable(false);
+        shapes.add(myBall1);
     }
 
     @Override
