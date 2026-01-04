@@ -19,13 +19,25 @@ import java.util.List;
 public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread gameThread;
     private final List<BaseShape> shapes = new ArrayList<>();
+    private ImageShape ballContainer; // Reference to the container
     private BaseShape selectedShape = null;
     private boolean shapesInitialized = false;
     private Bitmap backgroundBitmap;
+    private int ballCount = 0; // Example variable to track balls
 
     public CustomSurfaceView(Context context) {
         super(context);
         getHolder().addCallback(this);
+    }
+
+    // Method to add a ball and update the container's appearance
+    public void addBall() {
+        ballCount++;
+        // Assuming you have frames for 0, 1, 2, ... balls
+        // This will crash if you add more balls than you have frames.
+        if (ballContainer != null) {
+            ballContainer.setFrame(ballCount);
+        }
     }
 
     private void initShapes(int viewWidth, int viewHeight) {
@@ -36,14 +48,18 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         }
 
         float containerWidth = 1200f;
-        // Stretch the height to be 20% taller than the screen
-        float containerHeight = 9*viewHeight * 1.4f/10;
-        ImageShape myBall = new ImageShape(getContext(), 100, 500, containerWidth, containerHeight, R.drawable.ball_container);
-        myBall.setMovable(false);
-        shapes.add(myBall);
-        ImageShape myBall1 = new ImageShape(getContext(), 100, 500, containerWidth, containerHeight, R.drawable.ball_container_1_ball);
-        //myBall1.setMovable(false);
-        shapes.add(myBall1);
+        float containerHeight = 9 * viewHeight * 1.4f / 10;
+
+        // Define all the frames for the container animation
+        int[] containerFrames = {
+                R.drawable.ball_container,      // Frame 0: Empty
+                R.drawable.ball_container_1_ball, // Frame 1: One ball
+                // Add more frames here, e.g., R.drawable.ball_container_2_balls
+        };
+
+        // Create a single container with all its potential frames
+        ballContainer = new ImageShape(getContext(), 100, 500, containerWidth, containerHeight, false, containerFrames);
+        shapes.add(ballContainer);
     }
 
     @Override
@@ -80,11 +96,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         super.draw(canvas);
         if (canvas == null) return;
 
-        // Draw background image if available
         if (backgroundBitmap != null) {
             canvas.drawBitmap(backgroundBitmap, 0, 0, null);
         } else {
-            // Background color fallback
             canvas.drawColor(Color.DKGRAY);
         }
 
@@ -100,6 +114,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                 // Example: Add a ball on touch
+                 addBall();
+
                 for (int i = shapes.size() - 1; i >= 0; i--) {
                     BaseShape shape = shapes.get(i);
                     if (shape.isTouched(x, y)) {
@@ -123,6 +140,4 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         }
         return true;
     }
-
-
 }
