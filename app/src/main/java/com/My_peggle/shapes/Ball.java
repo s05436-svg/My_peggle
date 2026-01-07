@@ -13,12 +13,9 @@ public class Ball extends BaseShape {
     private float velocityY;
     private float radius;
     private Bitmap bitmap;
-    private final float speed = 37.0f; // Constant speed for the ball
+    private final float speed = 40.0f; // Constant speed for the ball
     private boolean isMoving = false;
-    private final float airFriction = 0.995f; // A small amount of negative acceleration
-    // Gravity is calculated to counteract friction when the ball moves straight down at its initial speed.
-    // gravity = speed * (1 - airFriction)
-    private final float gravity = speed * (1-airFriction); // 15.0f * (1 - 0.998f) = 15.0f * 0.002f = 0.03f
+    private final float gravity = 0.2f; // Constant downward force
 
     public Ball(Context context, float x, float y, float radius) {
         super(x, y);
@@ -35,6 +32,17 @@ public class Ball extends BaseShape {
         }
     }
 
+    public float getRadius() {
+        return radius;
+    }
+    public float getX() { // Getter for x coordinate
+        return x;
+    }
+
+    public float getY() { // Getter for y coordinate
+        return y;
+    }
+
     public void setTarget(float targetX, float targetY) {
         float dx = targetX - x;
         float dy = targetY - y;
@@ -47,12 +55,21 @@ public class Ball extends BaseShape {
         }
     }
 
+    public void reflect(Peg peg) {
+        float normalX = x - peg.getX();
+        float normalY = y - peg.getY();
+        float distance = (float) Math.sqrt(normalX * normalX + normalY * normalY);
+        float unitNormalX = normalX / distance;
+        float unitNormalY = normalY / distance;
+
+        float dotProduct = velocityX * unitNormalX + velocityY * unitNormalY;
+
+        velocityX = velocityX - 2 * dotProduct * unitNormalX;
+        velocityY = velocityY - 2 * dotProduct * unitNormalY;
+    }
+
     public void update() {
         if (isMoving) {
-            // Apply air friction
-            velocityX *= airFriction;
-            velocityY *= airFriction;
-
             // Apply gravity
             velocityY += gravity;
 

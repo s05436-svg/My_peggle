@@ -12,16 +12,21 @@ import android.view.SurfaceView;
 import com.My_peggle.R;
 import com.My_peggle.shapes.Ball;
 import com.My_peggle.shapes.BaseShape;
+import com.My_peggle.shapes.Cannon;
 import com.My_peggle.shapes.Peg;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 
 public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread gameThread;
     private final List<BaseShape> shapes = new ArrayList<>();
+    private final List<Ball> balls = new ArrayList<>();
+    private final List<Peg> pegs = new ArrayList<>();
     private boolean shapesInitialized = false;
     private Bitmap backgroundBitmap;
+    private Cannon cannon;
 
     public CustomSurfaceView(Context context) {
         super(context);
@@ -35,15 +40,39 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, viewWidth, viewHeight, true);
         }
 
-        shapes.add(new Ball(getContext(), 500, 1000, 30));
-        shapes.add(new Peg(getContext(), 500, 500, 30, Peg.PegType.BLUE));
-        shapes.add(new Peg(getContext(), 700, 600, 30, Peg.PegType.ORANGE));
+        // Create the cannon at the top-center of the screen
+        cannon = new Cannon(getContext(), viewWidth/2f, 100f, 700f, 350f);
+        shapes.add(cannon);
+
+        // Add some pegs
+        Peg peg1 = new Peg(getContext(), 500, 500, 30, Peg.PegType.BLUE);
+        Peg peg2 = new Peg(getContext(), 700, 600, 30, Peg.PegType.ORANGE);
+        shapes.add(peg1);
+        shapes.add(peg2);
+        pegs.add(peg1);
+        pegs.add(peg2);
     }
 
     public void update() {
-        for (BaseShape shape : shapes) {
-            if (shape instanceof Ball) {
-                ((Ball) shape).update();
+        // Update all balls
+        for (Ball ball : balls) {
+            ball.update();
+        }
+
+        // Check for collisions
+        checkCollisions();
+    }
+
+    private void checkCollisions() {
+        for (Ball ball : balls) {
+            for (Peg peg : pegs) {
+                float dx = ball.getX() - peg.getX();
+                float dy = ball.getY() - peg.getY();
+                float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < ball.getRadius() + peg.getRadius()) {
+                    ball.reflect(peg);
+                }
             }
         }
     }
@@ -91,18 +120,31 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         for (BaseShape shape : shapes) {
             shape.draw(canvas);
         }
+         for (Ball ball : balls) {
+            ball.draw(canvas);
+        }
+    }
+
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_HOVER_MOVE) {
+            if (cannon != null) {
+                cannon.aim(event.getX(), event.getY());
+            }
+            return true;
+        }
+        return super.onGenericMotionEvent(event);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        float x = event.getX();
-        float y = event.getY();
-
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            for (BaseShape shape : shapes) {
-                if (shape instanceof Ball) {
-                    ((Ball) shape).setTarget(x, y);
-                }
+            if (cannon != null) {
+                // Aim one last time to ensure it's perfectly aligned on click
+                cannon.aim(event.getX(), event.getY());
+                Ball newBall = cannon.fire(getContext());
+                newBall.setTarget(event.getX(), event.getY());
+                balls.add(newBall);
             }
         }
         return true;

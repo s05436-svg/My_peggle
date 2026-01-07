@@ -43,6 +43,18 @@ public class Peg extends BaseShape {
         }
     }
 
+    public float getRadius() {
+        return radius;
+    }
+
+    public float getX() { // Getter for x coordinate
+        return x;
+    }
+
+    public float getY() { // Getter for y coordinate
+        return y;
+    }
+
     public PegType getType() {
         return type;
     }
