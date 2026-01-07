@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.util.Log;
 
 import com.My_peggle.R;
 
@@ -16,6 +17,8 @@ public class Ball extends BaseShape {
     private final float speed = 40.0f; // Constant speed for the ball
     private boolean isMoving = false;
     private final float gravity = 0.2f; // Constant downward force
+
+    private static final String TAG = "Ball";
 
     public Ball(Context context, float x, float y, float radius) {
         super(x, y);
@@ -71,7 +74,13 @@ public class Ball extends BaseShape {
 
         // Apply the reflection formula: v' = v - 2 * (v . n) * n
         velocityX = velocityX - 2 * dotProduct * unitNormalX;
-        velocityY = velocityY - 2 * dotProduct * unitNormalY;
+        if (velocityX > 0) {
+            velocityY = velocityY - 2 * dotProduct * unitNormalY;}
+        else {
+            velocityY = velocityY + 2 * dotProduct * unitNormalY;
+        }
+
+
 
     }
 
