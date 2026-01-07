@@ -27,6 +27,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private boolean shapesInitialized = false;
     private Bitmap backgroundBitmap;
     private Cannon cannon;
+    private int screenWidth;
+    private int screenHeight;
 
     public CustomSurfaceView(Context context) {
         super(context);
@@ -56,7 +58,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     public void update() {
         // Update all balls
         for (Ball ball : balls) {
-            ball.update();
+            ball.update(screenWidth, screenHeight);
         }
 
         // Check for collisions
@@ -96,6 +98,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        this.screenWidth = width;
+        this.screenHeight = height;
         if (!shapesInitialized) {
             initShapes(width, height);
             shapesInitialized = true;

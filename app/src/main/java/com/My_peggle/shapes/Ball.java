@@ -71,20 +71,17 @@ public class Ball extends BaseShape {
 
         float dotProduct = velocityX * unitNormalX + velocityY * unitNormalY;
 
+        // Don't reflect if the objects are already moving apart
+        if (dotProduct >= 0) {
+            return;
+        }
 
         // Apply the reflection formula: v' = v - 2 * (v . n) * n
         velocityX = velocityX - 2 * dotProduct * unitNormalX;
-        if (velocityX > 0) {
-            velocityY = velocityY - 2 * dotProduct * unitNormalY;}
-        else {
-            velocityY = velocityY + 2 * dotProduct * unitNormalY;
-        }
-
-
-
+        velocityY = velocityY - 2 * dotProduct * unitNormalY;
     }
 
-    public void update() {
+    public void update(int screenWidth, int screenHeight) {
         if (isMoving) {
             // Apply gravity
             velocityY += gravity;
@@ -92,6 +89,20 @@ public class Ball extends BaseShape {
             // Update position
             x += velocityX;
             y += velocityY;
+
+            // Check for wall collisions
+            if (x - radius < 0) {
+                x = radius;
+                velocityX *= -1;
+            } else if (x + radius > screenWidth) {
+                x = screenWidth - radius;
+                velocityX *= -1;
+            }
+
+            if (y - radius < 0) {
+                y = radius;
+                velocityY *= -1;
+            }
         }
     }
 
