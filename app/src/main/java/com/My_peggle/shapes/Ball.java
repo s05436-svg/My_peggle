@@ -59,13 +59,20 @@ public class Ball extends BaseShape {
         float normalX = x - peg.getX();
         float normalY = y - peg.getY();
         float distance = (float) Math.sqrt(normalX * normalX + normalY * normalY);
+
+        // Avoid division by zero
+        if (distance == 0) return;
+
         float unitNormalX = normalX / distance;
         float unitNormalY = normalY / distance;
 
         float dotProduct = velocityX * unitNormalX + velocityY * unitNormalY;
 
+
+        // Apply the reflection formula: v' = v - 2 * (v . n) * n
         velocityX = velocityX - 2 * dotProduct * unitNormalX;
         velocityY = velocityY - 2 * dotProduct * unitNormalY;
+
     }
 
     public void update() {

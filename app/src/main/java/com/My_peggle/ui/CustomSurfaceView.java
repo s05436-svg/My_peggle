@@ -69,8 +69,18 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 float dx = ball.getX() - peg.getX();
                 float dy = ball.getY() - peg.getY();
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
+                float sumOfRadii = ball.getRadius() + peg.getRadius();
 
-                if (distance < ball.getRadius() + peg.getRadius()) {
+                if (distance < sumOfRadii) {
+                    // Collision detected
+
+                    // Reposition the ball to the point of contact to prevent sticking
+                    float overlap = sumOfRadii - distance;
+                    float newX = ball.getX() + overlap * (dx / distance);
+                    float newY = ball.getY() + overlap * (dy / distance);
+                    ball.setPosition(newX, newY);
+
+                    // Reflect the ball's velocity
                     ball.reflect(peg);
                 }
             }
