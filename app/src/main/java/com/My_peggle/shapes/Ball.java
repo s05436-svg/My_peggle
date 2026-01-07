@@ -9,43 +9,25 @@ import com.My_peggle.R;
 
 public class Ball extends BaseShape {
 
-    // Enum to define the different types of balls
-    public enum BallType {
-        ORANGE,
-        BLUE,
-        SILVER
-    }
-
     private float velocityX;
     private float velocityY;
     private float radius;
     private Bitmap bitmap;
-    private final BallType type;
+    private final float speed = 37.0f; // Constant speed for the ball
+    private boolean isMoving = false;
+    private final float airFriction = 0.995f; // A small amount of negative acceleration
+    // Gravity is calculated to counteract friction when the ball moves straight down at its initial speed.
+    // gravity = speed * (1 - airFriction)
+    private final float gravity = speed * (1-airFriction); // 15.0f * (1 - 0.998f) = 15.0f * 0.002f = 0.03f
 
-    public Ball(Context context, float x, float y, float radius, BallType type) {
+    public Ball(Context context, float x, float y, float radius) {
         super(x, y);
         this.radius = radius;
-        this.type = type;
         this.velocityX = 0;
         this.velocityY = 0;
+        setMovable(true);
 
-        int resId;
-        // Set properties based on the ball type
-        switch (type) {
-            case ORANGE:
-                resId = R.drawable.ball_orange; // הערה: עליך ליצור תמונה בשם זה
-                setMovable(false); // כדור כתום קבוע במקום
-                break;
-            case BLUE:
-                resId = R.drawable.ball_blue;   // הערה: עליך ליצור תמונה בשם זה
-                setMovable(false); // כדור כחול קבוע במקום
-                break;
-            case SILVER:
-            default:
-                resId = R.drawable.ball_silver; // הערה: עליך ליצור תמונה בשם זה
-                setMovable(true);  // כדור כסוף יכול לזוז
-                break;
-        }
+        int resId = R.drawable.silver_ball;
 
         Bitmap originalBitmap = BitmapFactory.decodeResource(context.getResources(), resId);
         if (originalBitmap != null) {
@@ -53,21 +35,28 @@ public class Ball extends BaseShape {
         }
     }
 
-    public BallType getType() {
-        return type;
-    }
+    public void setTarget(float targetX, float targetY) {
+        float dx = targetX - x;
+        float dy = targetY - y;
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
-    public void setVelocity(float vx, float vy) {
-        // Only movable balls can have velocity
-        if (isMovable()) {
-            this.velocityX = vx;
-            this.velocityY = vy;
+        if (distance > 0) {
+            velocityX = (dx / distance) * speed;
+            velocityY = (dy / distance) * speed;
+            isMoving = true;
         }
     }
 
     public void update() {
-        // Only movable balls update their position based on velocity
-        if (isMovable()) {
+        if (isMoving) {
+            // Apply air friction
+            velocityX *= airFriction;
+            velocityY *= airFriction;
+
+            // Apply gravity
+            velocityY += gravity;
+
+            // Update position
             x += velocityX;
             y += velocityY;
         }

@@ -5,17 +5,19 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 
+import com.My_peggle.R;
+
 public class Cannon extends BaseShape {
     private Bitmap bitmap;
     private float width;
     private float height;
 
-    public Cannon(Context context, float x, float y, float width, float height, int resId) {
+    public Cannon(Context context, float x, float y, float width, float height) {
         super(x, y);
         this.width = width;
         this.height = height;
 
-        Bitmap originalBitmap = BitmapFactory.decodeResource(context.getResources(), resId);
+        Bitmap originalBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.cannon);
         this.bitmap = Bitmap.createScaledBitmap(originalBitmap, (int)width, (int)height, true);
     }
 
@@ -23,9 +25,10 @@ public class Cannon extends BaseShape {
         // aiming logic would go here
     }
 
-    public Ball fire(Context context, int resId) {
-        // firing logic would go here
-        return new Ball(context, x, y, 20, resId); // Placeholder
+    public Ball fire(Context context) {
+        // The ball should be fired from the cannon's "nozzle"
+        // For now, let's fire it from the cannon's center.
+        return new Ball(context, x, y, 20);
     }
 
     @Override

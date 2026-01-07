@@ -19,6 +19,7 @@ public class GameThread extends Thread {
         while (isRunning) {
             Canvas canvas = null;
             try {
+                gameView.update();
                 canvas = surfaceHolder.lockCanvas();
                 if (canvas != null) {
                     synchronized (surfaceHolder) {
