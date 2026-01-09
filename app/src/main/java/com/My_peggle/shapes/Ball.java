@@ -8,15 +8,21 @@ import android.util.Log;
 
 import com.My_peggle.R;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Ball extends BaseShape {
 
     private float velocityX;
     private float velocityY;
     private float radius;
     private Bitmap bitmap;
-    private final float speed = 40.0f; // Constant speed for the ball
+    private final float speed = 45.0f; // Constant speed for the ball
     private boolean isMoving = false;
-    private final float gravity = 0.2f; // Constant downward force
+    private final float gravity = 0.3f; // Constant downward force
+    private boolean isDeactivated = false;
+    private List<Peg> hitPegs = new ArrayList<>();
+
 
     private static final String TAG = "Ball";
 
@@ -33,6 +39,10 @@ public class Ball extends BaseShape {
         if (originalBitmap != null) {
             this.bitmap = Bitmap.createScaledBitmap(originalBitmap, (int) (radius * 2), (int) (radius * 2), true);
         }
+    }
+
+    public List<Peg> getHitPegs() {
+        return hitPegs;
     }
 
     public float getRadius() {
@@ -58,13 +68,13 @@ public class Ball extends BaseShape {
         }
     }
 
-    public void reflect(Peg peg) {
+    public boolean reflect(Peg peg) {
         float normalX = x - peg.getX();
         float normalY = y - peg.getY();
         float distance = (float) Math.sqrt(normalX * normalX + normalY * normalY);
 
         // Avoid division by zero
-        if (distance == 0) return;
+        if (distance == 0) return false;
 
         float unitNormalX = normalX / distance;
         float unitNormalY = normalY / distance;
@@ -73,12 +83,17 @@ public class Ball extends BaseShape {
 
         // Don't reflect if the objects are already moving apart
         if (dotProduct >= 0) {
-            return;
+            return false;
+        }
+
+        if (!hitPegs.contains(peg)) {
+            hitPegs.add(peg);
         }
 
         // Apply the reflection formula: v' = v - 2 * (v . n) * n
         velocityX = velocityX - 2 * dotProduct * unitNormalX;
         velocityY = velocityY - 2 * dotProduct * unitNormalY;
+        return true;
     }
 
     public void update(int screenWidth, int screenHeight) {
@@ -103,7 +118,19 @@ public class Ball extends BaseShape {
                 y = radius;
                 velocityY *= -1;
             }
+
+            if (y - radius > screenHeight) {
+                deactivate();
+            }
         }
+    }
+
+    public boolean isDeactivated() {
+        return isDeactivated;
+    }
+
+    public void deactivate() {
+        isDeactivated = true;
     }
 
     @Override

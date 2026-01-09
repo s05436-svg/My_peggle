@@ -29,6 +29,10 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private Cannon cannon;
     private int screenWidth;
     private int screenHeight;
+    private long ballDeactivatedTime = 0;
+    private List<Peg> pegsToClear = new ArrayList<>();
+    private long pegClearStartTime = 0;
+    private int pegClearIndex = 0;
 
     public CustomSurfaceView(Context context) {
         super(context);
@@ -56,9 +60,33 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     public void update() {
-        // Update all balls
-        for (Ball ball : balls) {
+        // Update all balls and remove if they are deactivated
+        Iterator<Ball> ballIterator = balls.iterator();
+        while (ballIterator.hasNext()) {
+            Ball ball = ballIterator.next();
             ball.update(screenWidth, screenHeight);
+            if (ball.isDeactivated()) {
+                pegsToClear.addAll(ball.getHitPegs());
+                ballIterator.remove();
+                ballDeactivatedTime = System.currentTimeMillis();
+                pegClearStartTime = ballDeactivatedTime + 300;
+                pegClearIndex = 0;
+            }
+        }
+
+        if (!pegsToClear.isEmpty() && System.currentTimeMillis() >= pegClearStartTime) {
+            if (pegClearIndex < pegsToClear.size()) {
+                Peg pegToRemove = pegsToClear.get(pegClearIndex);
+                pegs.remove(pegToRemove);
+                shapes.remove(pegToRemove);
+                pegClearIndex++;
+                if (pegClearIndex < pegsToClear.size()) {
+                    long delay = 700 / pegsToClear.size();
+                    pegClearStartTime = System.currentTimeMillis() + delay;
+                } else {
+                    pegsToClear.clear();
+                }
+            }
         }
 
         // Check for collisions
@@ -82,8 +110,10 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     float newY = ball.getY() + overlap * (dy / distance);
                     ball.setPosition(newX, newY);
 
-                    // Reflect the ball's velocity
-                    ball.reflect(peg);
+                    // Reflect the ball's velocity and check if a hit occurred
+                    if (ball.reflect(peg)) {
+                        peg.hit();
+                    }
                 }
             }
         }
@@ -153,7 +183,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (cannon != null) {
+            // Only fire a ball if there isn't one on the screen already and 1 second has passed
+            if (cannon != null && balls.isEmpty() && (System.currentTimeMillis() - ballDeactivatedTime > 1000)) {
                 // Aim one last time to ensure it's perfectly aligned on click
                 cannon.aim(event.getX(), event.getY());
                 Ball newBall = cannon.fire(getContext());

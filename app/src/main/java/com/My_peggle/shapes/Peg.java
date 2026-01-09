@@ -17,6 +17,7 @@ public class Peg extends BaseShape {
     private boolean isHit;
     private float radius;
     private Bitmap bitmap;
+    private Bitmap brightBitmap;
     private final PegType type;
 
     public Peg(Context context, float x, float y, float radius, PegType type) {
@@ -27,13 +28,16 @@ public class Peg extends BaseShape {
         setMovable(false);
 
         int resId;
+        int brightResId;
         switch (type) {
             case ORANGE:
                 resId = R.drawable.orange_ball;
+                brightResId = R.drawable.orange_ball_bright;
                 break;
             case BLUE:
             default:
                 resId = R.drawable.blue_ball;
+                brightResId = R.drawable.blue_ball_bright;
                 break;
         }
 
@@ -41,6 +45,15 @@ public class Peg extends BaseShape {
         if (originalBitmap != null) {
             this.bitmap = Bitmap.createScaledBitmap(originalBitmap, (int) (radius * 2), (int) (radius * 2), true);
         }
+
+        Bitmap originalBrightBitmap = BitmapFactory.decodeResource(context.getResources(), brightResId);
+        if (originalBrightBitmap != null) {
+            this.brightBitmap = Bitmap.createScaledBitmap(originalBrightBitmap, (int) (radius * 2), (int) (radius * 2), true);
+        }
+    }
+
+    public void hit() {
+        isHit = true;
     }
 
     public float getRadius() {
@@ -69,8 +82,9 @@ public class Peg extends BaseShape {
 
     @Override
     public void draw(Canvas canvas) {
-        if (!isHit && bitmap != null) {
-            canvas.drawBitmap(bitmap, x - radius, y - radius, null);
+        Bitmap currentBitmap = isHit ? brightBitmap : bitmap;
+        if (currentBitmap != null) {
+            canvas.drawBitmap(currentBitmap, x - radius, y - radius, null);
         }
     }
 
