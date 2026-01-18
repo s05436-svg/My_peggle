@@ -16,8 +16,9 @@ import com.My_peggle.shapes.Cannon;
 import com.My_peggle.shapes.Peg;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
 public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread gameThread;
@@ -50,13 +51,17 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         cannon = new Cannon(getContext(), viewWidth/2f, 100f, 700f, 350f);
         shapes.add(cannon);
 
-        // Add some pegs
-        Peg peg1 = new Peg(getContext(), 500, 500, 30, Peg.PegType.BLUE);
-        Peg peg2 = new Peg(getContext(), 700, 600, 30, Peg.PegType.ORANGE);
-        shapes.add(peg1);
-        shapes.add(peg2);
-        pegs.add(peg1);
-        pegs.add(peg2);
+        // Add 10 random pegs
+        Random random = new Random();
+        for (int i = 0; i < 20; i++) {
+            float x = 100 + random.nextFloat() * (viewWidth - 200);
+            float y = 300 + random.nextFloat() * (viewHeight - 500);
+
+            Peg.PegType type = (random.nextFloat() > 0.3) ? Peg.PegType.BLUE : Peg.PegType.ORANGE; // 30% chance of being orange
+            Peg peg = new Peg(getContext(), x, y, 30, type);
+            shapes.add(peg);
+            pegs.add(peg);
+        }
     }
 
     public void update() {

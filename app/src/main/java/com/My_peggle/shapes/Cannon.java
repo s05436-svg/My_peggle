@@ -36,7 +36,7 @@ public class Cannon extends BaseShape {
         float fireX = x + nozzleDistance * (float) Math.cos(angleInRadians);
         float fireY = y + nozzleDistance * (float) Math.sin(angleInRadians);
 
-        return new Ball(context, fireX, fireY, 20);
+        return new Ball(context, fireX, fireY, 15);
     }
 
     @Override

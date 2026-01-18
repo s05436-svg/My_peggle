@@ -17,9 +17,9 @@ public class Ball extends BaseShape {
     private float velocityY;
     private float radius;
     private Bitmap bitmap;
-    private final float speed = 45.0f; // Constant speed for the ball
+    private final float speed = 130.0f; // Constant speed for the ball
     private boolean isMoving = false;
-    private final float gravity = 0.3f; // Constant downward force
+    private final float gravity = 3.0f; // Constant downward force
     private boolean isDeactivated = false;
     private List<Peg> hitPegs = new ArrayList<>();
 
@@ -102,8 +102,8 @@ public class Ball extends BaseShape {
             velocityY += gravity;
 
             // Update position
-            x += velocityX;
-            y += velocityY;
+            x += velocityX*0.3;
+            y += velocityY*0.3;
 
             // Check for wall collisions
             if (x - radius < 0) {
