@@ -17,9 +17,11 @@ public class Ball extends BaseShape {
     private float velocityY;
     private float radius;
     private Bitmap bitmap;
-    private final float speed = 130.0f; // Constant speed for the ball
+    private final float speed = 30.0f; // Constant speed for the ball
     private boolean isMoving = false;
-    private final float gravity = 3.0f; // Constant downward force
+    private static final float GRAVITY_ACCELERATION = 1.0f; // Constant downward force
+    private static final float TIME_STEP = 0.7f;
+    private static final float DAMPING_FACTOR = 0.9f; // Energy loss on collision
     private boolean isDeactivated = false;
     private List<Peg> hitPegs = new ArrayList<>();
 
@@ -93,33 +95,46 @@ public class Ball extends BaseShape {
         // Apply the reflection formula: v' = v - 2 * (v . n) * n
         velocityX = velocityX - 2 * dotProduct * unitNormalX;
         velocityY = velocityY - 2 * dotProduct * unitNormalY;
+
+        // If the ball hits the top of the peg, apply damping
+        if (y > peg.getY()) {
+            velocityX *= DAMPING_FACTOR;
+            velocityY *= DAMPING_FACTOR;
+        }
+
         return true;
     }
 
     public void update(int screenWidth, int screenHeight) {
         if (isMoving) {
-            // Apply gravity
-            velocityY += gravity;
+            // Apply gravity to vertical velocity (v = u + at)
+            velocityY += GRAVITY_ACCELERATION * TIME_STEP;
 
-            // Update position
-            x += velocityX*0.3;
-            y += velocityY*0.3;
+            // Update position based on velocity (s = s + vt)
+            x += velocityX * TIME_STEP;
+            y += velocityY * TIME_STEP;
+
+            // Define the game boundaries to be a square, assuming landscape mode
+            // where screenWidth is greater than screenHeight.
+            float gameAreaWidth = screenHeight;
+            float gameLeft = (screenWidth - gameAreaWidth) / 2;
+            float gameRight = gameLeft + gameAreaWidth;
 
             // Check for wall collisions
-            if (x - radius < 0) {
-                x = radius;
+            if (x - radius < gameLeft) {
+                x = gameLeft + radius;
                 velocityX *= -1;
-            } else if (x + radius > screenWidth) {
-                x = screenWidth - radius;
+            } else if (x + radius > gameRight) {
+                x = gameRight - radius;
                 velocityX *= -1;
             }
 
-            if (y - radius < 0) {
+            if (y - radius < 0) { // Top boundary collision
                 y = radius;
                 velocityY *= -1;
             }
 
-            if (y - radius > screenHeight) {
+            if (y - radius > screenHeight) { // Deactivate when falling off the bottom
                 deactivate();
             }
         }

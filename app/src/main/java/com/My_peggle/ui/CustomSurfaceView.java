@@ -51,16 +51,30 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         cannon = new Cannon(getContext(), viewWidth/2f, 100f, 700f, 350f);
         shapes.add(cannon);
 
-        // Add 10 random pegs
+        // Add 20 random pegs
         Random random = new Random();
-        for (int i = 0; i < 20; i++) {
-            float x = 100 + random.nextFloat() * (viewWidth - 200);
-            float y = 300 + random.nextFloat() * (viewHeight - 500);
+        float gameAreaWidth = viewHeight;
+        float gameLeft = (viewWidth - gameAreaWidth) / 2;
+        float pegRadius = 30;
 
-            Peg.PegType type = (random.nextFloat() > 0.3) ? Peg.PegType.BLUE : Peg.PegType.ORANGE; // 30% chance of being orange
-            Peg peg = new Peg(getContext(), x, y, 30, type);
-            shapes.add(peg);
-            pegs.add(peg);
+        float minX = gameLeft + pegRadius;
+        float maxX = gameLeft + gameAreaWidth - pegRadius;
+        float spawnWidth = maxX - minX;
+
+        float minY = 300;
+        float maxY = viewHeight - 500;
+        float spawnHeight = maxY - minY;
+
+        if (spawnWidth > 0 && spawnHeight > 0) {
+            for (int i = 0; i < 20; i++) {
+                float x = minX + random.nextFloat() * spawnWidth;
+                float y = minY + random.nextFloat() * spawnHeight;
+
+                Peg.PegType type = (random.nextFloat() > 0.3) ? Peg.PegType.BLUE : Peg.PegType.ORANGE; // 30% chance of being orange
+                Peg peg = new Peg(getContext(), x, y, pegRadius, type);
+                shapes.add(peg);
+                pegs.add(peg);
+            }
         }
     }
 
