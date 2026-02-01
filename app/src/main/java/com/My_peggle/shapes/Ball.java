@@ -17,11 +17,11 @@ public class Ball extends BaseShape {
     private float velocityY;
     private float radius;
     private Bitmap bitmap;
-    private final float speed = 30.0f; // Constant speed for the ball
+    private final float speed = 60.0f; // Constant speed for the ball
     private boolean isMoving = false;
-    private static final float GRAVITY_ACCELERATION = 1.0f; // Constant downward force
-    private static final float TIME_STEP = 0.7f;
-    private static final float DAMPING_FACTOR = 0.9f; // Energy loss on collision
+    private static final float GRAVITY_ACCELERATION = 6.0f; // Constant downward force
+    private static final float TIME_STEP = 0.35f;
+    private static final float DAMPING_FACTOR = 0.8f; // Energy loss on collision
     private boolean isDeactivated = false;
     private List<Peg> hitPegs = new ArrayList<>();
 
@@ -96,7 +96,7 @@ public class Ball extends BaseShape {
         velocityX = velocityX - 2 * dotProduct * unitNormalX;
         velocityY = velocityY - 2 * dotProduct * unitNormalY;
 
-        // If the ball hits the top of the peg, apply damping
+        // If the ball hits the bottom of the peg, apply damping
         if (y > peg.getY()) {
             velocityX *= DAMPING_FACTOR;
             velocityY *= DAMPING_FACTOR;
