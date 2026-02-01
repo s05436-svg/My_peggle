@@ -17,10 +17,10 @@ public class Ball extends BaseShape {
     private float velocityY;
     private float radius;
     private Bitmap bitmap;
-    private final float speed = 60.0f; // Constant speed for the ball
+    private final float speed = 55.0f; // Constant speed for the ball
     private boolean isMoving = false;
     private static final float GRAVITY_ACCELERATION = 6.0f; // Constant downward force
-    private static final float TIME_STEP = 0.35f;
+    private static final float TIME_STEP = 0.37f;
     private static final float DAMPING_FACTOR = 0.8f; // Energy loss on collision
     private boolean isDeactivated = false;
     private List<Peg> hitPegs = new ArrayList<>();
