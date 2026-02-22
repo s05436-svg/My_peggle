@@ -27,6 +27,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private final List<Peg> pegs = new ArrayList<>();
     private boolean shapesInitialized = false;
     private Bitmap backgroundBitmap;
+    private Bitmap ballContainerBitmap;
+    private float ballContainerX;
+    private float ballContainerY;
     private Cannon cannon;
     private int screenWidth;
     private int screenHeight;
@@ -45,6 +48,17 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.peggle_background_new);
         if (originalBackground != null) {
             backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, viewWidth, viewHeight, true);
+        }
+
+        // Load and position the ball container
+        Bitmap originalBallContainer = BitmapFactory.decodeResource(getResources(), R.drawable.ball_container);
+        if (originalBallContainer != null) {
+            int containerHeight = 1250; // You can adjust the size
+            int containerWidth = (int) (originalBallContainer.getWidth() * ((float) containerHeight / originalBallContainer.getHeight()));
+            ballContainerBitmap = Bitmap.createScaledBitmap(originalBallContainer, containerWidth, containerHeight, true);
+            // Position it at the bottom-center
+            ballContainerX = (viewWidth - containerWidth) / 4f;
+            ballContainerY = viewHeight - containerHeight + 30; // Adjust Y to make it sit nicely at the bottom
         }
 
         // Create the cannon at the top-center of the screen
@@ -178,6 +192,10 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             canvas.drawBitmap(backgroundBitmap, 0, 0, null);
         } else {
             canvas.drawColor(Color.DKGRAY);
+        }
+
+        if (ballContainerBitmap != null) {
+            canvas.drawBitmap(ballContainerBitmap, ballContainerX, ballContainerY, null);
         }
 
         for (BaseShape shape : shapes) {
