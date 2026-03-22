@@ -26,6 +26,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private final List<BaseShape> shapes = new ArrayList<>();
     private final List<Ball> balls = new ArrayList<>();
     private final List<Peg> pegs = new ArrayList<>();
+    private final List<Ball> containerBalls = new ArrayList<>();
+    private final List<Ball> animatingBalls = new ArrayList<>();
     private boolean shapesInitialized = false;
     private Bitmap backgroundBitmap;
     private Bitmap ballContainerBitmap;
@@ -73,12 +75,33 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         // Load and position the ball container
         Bitmap originalBallContainer = BitmapFactory.decodeResource(getResources(), R.drawable.ball_container);
         if (originalBallContainer != null) {
-            int containerHeight = 1250; // You can adjust the size
-            int containerWidth = (int) (originalBallContainer.getWidth() * ((float) containerHeight / originalBallContainer.getHeight()));
+            float ballDiameter = 30f; // Ball radius is 15
+            int containerWidth = (int) (ballDiameter * 18.0f); 
+            int containerHeight = 1450;
+            
             ballContainerBitmap = Bitmap.createScaledBitmap(originalBallContainer, containerWidth, containerHeight, true);
-            // Position it at the bottom-center
-            ballContainerX = ((viewWidth - containerWidth) / 4f) - 400f;
-            ballContainerY = viewHeight - containerHeight + 30; // Adjust Y to make it sit nicely at the bottom
+            ballContainerX = ((viewWidth - containerWidth) / 4f) - 200f;
+            ballContainerY = viewHeight - containerHeight + 200;
+
+            // Initialize balls inside the container
+            containerBalls.clear();
+            animatingBalls.clear();
+            float startYOffset = 380f; // Below the counter
+            float bottomLimit = containerHeight - 220f; // Raised to move the stack up as requested
+            float availableHeight = bottomLimit - startYOffset;
+            
+            // Calculate a vertical step between ball centers
+            float verticalStep = availableHeight / 10f;
+            // Radius is set larger than verticalStep/2 to ensure visual overlap
+            // and compensate for transparent padding in the ball image.
+            float cBallRadius = (verticalStep / 2f) * 1.5f;
+            float centerX = ballContainerX + containerWidth / 2f;
+
+            for (int i = 0; i < 10; i++) {
+                // Stack them tightly with overlap from bottom to top
+                float ballY = ballContainerY + bottomLimit - (i * verticalStep) - (verticalStep / 2f);
+                containerBalls.add(new Ball(getContext(), centerX, ballY, cBallRadius));
+            }
         }
 
         // Create the cannon at the top-center of the screen
@@ -104,7 +127,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 float x = minX + random.nextFloat() * spawnWidth;
                 float y = minY + random.nextFloat() * spawnHeight;
 
-                Peg.PegType type = (random.nextFloat() > 0.3) ? Peg.PegType.BLUE : Peg.PegType.ORANGE; // 30% chance of being orange
+                Peg.PegType type = (random.nextFloat() > 0.3) ? Peg.PegType.BLUE : Peg.PegType.ORANGE; 
                 Peg peg = new Peg(getContext(), x, y, pegRadius, type);
                 shapes.add(peg);
                 pegs.add(peg);
@@ -119,12 +142,29 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             Ball ball = ballIterator.next();
             ball.update(screenWidth, screenHeight);
             if (ball.isDeactivated()) {
-                remainingBalls--; // Decrement only after ball is deactivated
+                remainingBalls--; 
+                if (!containerBalls.isEmpty()) {
+                    Ball topBall = containerBalls.remove(containerBalls.size() - 1);
+                    animatingBalls.add(topBall);
+                }
                 pegsToClear.addAll(ball.getHitPegs());
                 ballIterator.remove();
                 ballDeactivatedTime = System.currentTimeMillis();
                 pegClearStartTime = ballDeactivatedTime + 300;
                 pegClearIndex = 0;
+            }
+        }
+
+        // Animation logic for sucking balls up
+        float counterY = ballContainerY + 280;
+        Iterator<Ball> animIterator = animatingBalls.iterator();
+        while (animIterator.hasNext()) {
+            Ball b = animIterator.next();
+            float newY = b.getY() - 40; // Speed of suction
+            if (newY <= counterY) {
+                animIterator.remove();
+            } else {
+                b.setPosition(b.getX(), newY);
             }
         }
 
@@ -156,15 +196,11 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 float sumOfRadii = ball.getRadius() + peg.getRadius();
 
                 if (distance < sumOfRadii) {
-                    // Collision detected
-
-                    // Reposition the ball to the point of contact to prevent sticking
                     float overlap = sumOfRadii - distance;
                     float newX = ball.getX() + overlap * (dx / distance);
                     float newY = ball.getY() + overlap * (dy / distance);
                     ball.setPosition(newX, newY);
 
-                    // Reflect the ball's velocity and check if a hit occurred
                     if (ball.reflect(peg)) {
                         peg.hit();
                     }
@@ -218,13 +254,22 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         if (ballContainerBitmap != null) {
             canvas.drawBitmap(ballContainerBitmap, ballContainerX, ballContainerY, null);
 
-            // Draw remaining balls counter
+            // Draw balls inside the container
+            for (Ball b : containerBalls) {
+                b.draw(canvas);
+            }
+
+            // Draw animating balls
+            for (Ball b : animatingBalls) {
+                b.draw(canvas);
+            }
+
+            // Draw remaining balls counter ON TOP of the animating balls
             float circleX = ballContainerX + ballContainerBitmap.getWidth() / 2f;
-            float circleY = ballContainerY + 180;
+            float circleY = ballContainerY + 280;
             float radius = 50;
 
             canvas.drawCircle(circleX, circleY, radius, circlePaint);
-            // Draw text centered in the circle
             float textY = circleY - ((textPaint.descent() + textPaint.ascent()) / 2);
             canvas.drawText(String.valueOf(remainingBalls), circleX, textY, textPaint);
         }
@@ -251,14 +296,11 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            // Only fire a ball if there isn't one on the screen already, 1 second has passed, and we have balls left
             if (cannon != null && balls.isEmpty() && (System.currentTimeMillis() - ballDeactivatedTime > 1000) && remainingBalls > 0) {
-                // Aim one last time to ensure it's perfectly aligned on click
                 cannon.aim(event.getX(), event.getY());
                 Ball newBall = cannon.fire(getContext());
                 newBall.setTarget(event.getX(), event.getY());
                 balls.add(newBall);
-                // Removed remainingBalls-- from here
             }
         }
         return true;
