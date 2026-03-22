@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -45,9 +46,16 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private int pegClearIndex = 0;
 
     private int remainingBalls = 10;
+    private int totalScore = 0;
+    private int currentShotScore = 0;
+    private final int MAX_SCORE_BAR = 1500;
+
     private Paint circlePaint;
     private Paint textPaint;
     private Paint trajectoryPaint;
+    private Paint barBackgroundPaint;
+    private Paint barFillPaint;
+    private Paint barTextPaint;
     
     private Ball previewBall;
     private float lastTouchX, lastTouchY;
@@ -77,8 +85,23 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         trajectoryPaint.setStrokeWidth(8f);
         trajectoryPaint.setAntiAlias(true);
         trajectoryPaint.setAlpha(150);
-        // Use a dashed line effect for the arrow/path
         trajectoryPaint.setPathEffect(new DashPathEffect(new float[]{20, 20}, 0));
+
+        barBackgroundPaint = new Paint();
+        barBackgroundPaint.setColor(Color.DKGRAY);
+        barBackgroundPaint.setAlpha(180);
+        barBackgroundPaint.setStyle(Paint.Style.FILL);
+
+        barFillPaint = new Paint();
+        barFillPaint.setColor(Color.rgb(255, 165, 0)); // Orange/Gold for the score
+        barFillPaint.setStyle(Paint.Style.FILL);
+
+        barTextPaint = new Paint();
+        barTextPaint.setColor(Color.WHITE);
+        barTextPaint.setTextSize(35);
+        barTextPaint.setTextAlign(Paint.Align.CENTER);
+        barTextPaint.setFakeBoldText(true);
+        barTextPaint.setAntiAlias(true);
     }
 
     private void initShapes(int viewWidth, int viewHeight) {
@@ -91,7 +114,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         // Load and position the ball container
         Bitmap originalBallContainer = BitmapFactory.decodeResource(getResources(), R.drawable.ball_container);
         if (originalBallContainer != null) {
-            float ballDiameter = 30f; // Ball radius is 15
+            float ballDiameter = 30f; 
             int containerWidth = (int) (ballDiameter * 18.0f); 
             int containerHeight = 1450;
             
@@ -99,10 +122,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             ballContainerX = ((viewWidth - containerWidth) / 4f) - 130f;
             ballContainerY = viewHeight - containerHeight + 200;
 
-            // Initialize balls inside the container
             containerBalls.clear();
             animatingBalls.clear();
-            float startYOffset = 380f; // Below the counter
+            float startYOffset = 380f; 
             float bottomLimit = containerHeight - 225f;
             float availableHeight = bottomLimit - startYOffset;
             
@@ -116,11 +138,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             }
         }
 
-        // Create the cannon at the top-center of the screen
         cannon = new Cannon(getContext(), viewWidth/2f, 100f, 700f, 350f);
         shapes.add(cannon);
 
-        // Add 20 random pegs
         Random random = new Random();
         float gameAreaWidth = viewHeight;
         float gameLeft = (viewWidth - gameAreaWidth) / 2;
@@ -148,13 +168,16 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     public void update() {
-        // Update all balls and remove if they are deactivated
         Iterator<Ball> ballIterator = balls.iterator();
         while (ballIterator.hasNext()) {
             Ball ball = ballIterator.next();
             ball.update(screenWidth, screenHeight);
             if (ball.isDeactivated()) {
                 remainingBalls--; 
+                // When ball is lost, current shot score is permanently added to total
+                totalScore += currentShotScore;
+                currentShotScore = 0;
+
                 if (!containerBalls.isEmpty()) {
                     Ball topBall = containerBalls.remove(containerBalls.size() - 1);
                     animatingBalls.add(topBall);
@@ -167,7 +190,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             }
         }
 
-        // Animation logic for sucking balls up
         float counterY = ballContainerY + 280;
         Iterator<Ball> animIterator = animatingBalls.iterator();
         while (animIterator.hasNext()) {
@@ -180,7 +202,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             }
         }
         
-        // Peg fade animation logic
         Iterator<Peg> pegAnimIterator = animatingPegs.iterator();
         while (pegAnimIterator.hasNext()) {
             Peg p = pegAnimIterator.next();
@@ -194,8 +215,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 Peg pegToRemove = pegsToClear.get(pegClearIndex);
                 pegs.remove(pegToRemove);
                 shapes.remove(pegToRemove);
-                
-                // Start fade animation instead of just deleting
                 pegToRemove.startAnimation();
                 animatingPegs.add(pegToRemove);
                 
@@ -209,7 +228,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             }
         }
 
-        // Check for collisions
         checkCollisions();
     }
 
@@ -228,7 +246,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     ball.setPosition(newX, newY);
 
                     if (ball.reflect(peg)) {
-                        peg.hit();
+                        if (!peg.isHit()) {
+                            if (peg.getType() == Peg.PegType.ORANGE) {
+                                currentShotScore += 100;
+                            } else {
+                                currentShotScore += 10;
+                            }
+                            peg.hit();
+                        }
                     }
                 }
             }
@@ -297,17 +322,18 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             canvas.drawText(String.valueOf(remainingBalls), circleX, textY, textPaint);
         }
 
+        // Draw the Score Bar
+        drawScoreBar(canvas);
+
         for (BaseShape shape : shapes) {
             shape.draw(canvas);
         }
         
-        // Draw the preview ball and trajectory inside cannon if it exists
         if (previewBall != null) {
             drawTrajectory(canvas);
             previewBall.draw(canvas);
         }
         
-        // Draw the animating (fading) pegs
         for (Peg p : animatingPegs) {
             p.draw(canvas);
         }
@@ -315,6 +341,29 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
          for (Ball ball : balls) {
             ball.draw(canvas);
         }
+    }
+
+    private void drawScoreBar(Canvas canvas) {
+        float barWidth = 60f;
+        float barHeight = screenHeight * 0.6f;
+        float xPos = screenWidth - barWidth - 60f;
+        float yPos = (screenHeight - barHeight) / 2f;
+
+        // Draw background
+        RectF bgRect = new RectF(xPos, yPos, xPos + barWidth, yPos + barHeight);
+        canvas.drawRoundRect(bgRect, 15, 15, barBackgroundPaint);
+
+        // Calculate fill based on total score + current shot progress
+        int displayScore = Math.min(totalScore + currentShotScore, MAX_SCORE_BAR);
+        float fillHeight = (displayScore / (float) MAX_SCORE_BAR) * barHeight;
+
+        // Draw fill (from bottom up)
+        RectF fillRect = new RectF(xPos, yPos + barHeight - fillHeight, xPos + barWidth, yPos + barHeight);
+        canvas.drawRoundRect(fillRect, 15, 15, barFillPaint);
+
+        // Draw score text above and target below
+        canvas.drawText(String.valueOf(displayScore), xPos + barWidth / 2, yPos - 20, barTextPaint);
+        canvas.drawText("1500", xPos + barWidth / 2, yPos + barHeight + 40, barTextPaint);
     }
 
     private void drawTrajectory(Canvas canvas) {
@@ -336,7 +385,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             float simX = startX;
             float simY = startY;
             
-            // Start the arrow a bit after the ball
             float offsetSteps = 2; 
             for(int i=0; i<offsetSteps; i++) {
                 vY += Ball.GRAVITY_ACCELERATION * Ball.TIME_STEP;
@@ -346,7 +394,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             
             path.moveTo(simX, simY);
 
-            // Simulation loop with accurate intersection to prevent "bending"
             for (int i = 0; i < 11; i++) {
                 float prevSimX = simX;
                 float prevSimY = simY;
@@ -367,7 +414,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                         float prevPdy = prevSimY - peg.getY();
                         float prevDist = (float) Math.sqrt(prevPdx * prevPdx + prevPdy * prevPdy);
                         
-                        // Linear interpolation finds the point on the existing straight line
                         if (prevDist > rSum && Math.abs(dist - prevDist) > 0.001f) {
                             float t = (rSum - prevDist) / (dist - prevDist);
                             simX = prevSimX + t * (simX - prevSimX);
@@ -409,6 +455,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 if (cannon != null && balls.isEmpty() && (System.currentTimeMillis() - ballDeactivatedTime > 1000) && remainingBalls > 0) {
                     cannon.aim(x, y);
                     previewBall = cannon.fire(getContext());
+                    currentShotScore = 0;
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
