@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -38,9 +39,28 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private long pegClearStartTime = 0;
     private int pegClearIndex = 0;
 
+    private int remainingBalls = 10;
+    private Paint circlePaint;
+    private Paint textPaint;
+
     public CustomSurfaceView(Context context) {
         super(context);
         getHolder().addCallback(this);
+        initPaints();
+    }
+
+    private void initPaints() {
+        circlePaint = new Paint();
+        circlePaint.setColor(Color.BLUE);
+        circlePaint.setAntiAlias(true);
+        circlePaint.setStyle(Paint.Style.FILL);
+
+        textPaint = new Paint();
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(60);
+        textPaint.setFakeBoldText(true);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setAntiAlias(true);
     }
 
     private void initShapes(int viewWidth, int viewHeight) {
@@ -57,7 +77,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             int containerWidth = (int) (originalBallContainer.getWidth() * ((float) containerHeight / originalBallContainer.getHeight()));
             ballContainerBitmap = Bitmap.createScaledBitmap(originalBallContainer, containerWidth, containerHeight, true);
             // Position it at the bottom-center
-            ballContainerX = (viewWidth - containerWidth) / 4f;
+            ballContainerX = ((viewWidth - containerWidth) / 4f) - 400f;
             ballContainerY = viewHeight - containerHeight + 30; // Adjust Y to make it sit nicely at the bottom
         }
 
@@ -99,6 +119,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             Ball ball = ballIterator.next();
             ball.update(screenWidth, screenHeight);
             if (ball.isDeactivated()) {
+                remainingBalls--; // Decrement only after ball is deactivated
                 pegsToClear.addAll(ball.getHitPegs());
                 ballIterator.remove();
                 ballDeactivatedTime = System.currentTimeMillis();
@@ -196,6 +217,16 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
         if (ballContainerBitmap != null) {
             canvas.drawBitmap(ballContainerBitmap, ballContainerX, ballContainerY, null);
+
+            // Draw remaining balls counter
+            float circleX = ballContainerX + ballContainerBitmap.getWidth() / 2f;
+            float circleY = ballContainerY + 180;
+            float radius = 50;
+
+            canvas.drawCircle(circleX, circleY, radius, circlePaint);
+            // Draw text centered in the circle
+            float textY = circleY - ((textPaint.descent() + textPaint.ascent()) / 2);
+            canvas.drawText(String.valueOf(remainingBalls), circleX, textY, textPaint);
         }
 
         for (BaseShape shape : shapes) {
@@ -220,13 +251,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            // Only fire a ball if there isn't one on the screen already and 1 second has passed
-            if (cannon != null && balls.isEmpty() && (System.currentTimeMillis() - ballDeactivatedTime > 1000)) {
+            // Only fire a ball if there isn't one on the screen already, 1 second has passed, and we have balls left
+            if (cannon != null && balls.isEmpty() && (System.currentTimeMillis() - ballDeactivatedTime > 1000) && remainingBalls > 0) {
                 // Aim one last time to ensure it's perfectly aligned on click
                 cannon.aim(event.getX(), event.getY());
                 Ball newBall = cannon.fire(getContext());
                 newBall.setTarget(event.getX(), event.getY());
                 balls.add(newBall);
+                // Removed remainingBalls-- from here
             }
         }
         return true;
