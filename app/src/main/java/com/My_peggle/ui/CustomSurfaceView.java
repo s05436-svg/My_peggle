@@ -5,7 +5,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -45,8 +47,10 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private int remainingBalls = 10;
     private Paint circlePaint;
     private Paint textPaint;
+    private Paint trajectoryPaint;
     
     private Ball previewBall;
+    private float lastTouchX, lastTouchY;
 
     public CustomSurfaceView(Context context) {
         super(context);
@@ -66,6 +70,15 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         textPaint.setFakeBoldText(true);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setAntiAlias(true);
+
+        trajectoryPaint = new Paint();
+        trajectoryPaint.setColor(Color.WHITE);
+        trajectoryPaint.setStyle(Paint.Style.STROKE);
+        trajectoryPaint.setStrokeWidth(8f);
+        trajectoryPaint.setAntiAlias(true);
+        trajectoryPaint.setAlpha(150);
+        // Use a dashed line effect for the arrow/path
+        trajectoryPaint.setPathEffect(new DashPathEffect(new float[]{20, 20}, 0));
     }
 
     private void initShapes(int viewWidth, int viewHeight) {
@@ -288,8 +301,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             shape.draw(canvas);
         }
         
-        // Draw the preview ball inside cannon if it exists
+        // Draw the preview ball and trajectory inside cannon if it exists
         if (previewBall != null) {
+            drawTrajectory(canvas);
             previewBall.draw(canvas);
         }
         
@@ -300,6 +314,75 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
          for (Ball ball : balls) {
             ball.draw(canvas);
+        }
+    }
+
+    private void drawTrajectory(Canvas canvas) {
+        if (previewBall == null || cannon == null) return;
+
+        float startX = previewBall.getX();
+        float startY = previewBall.getY();
+        float ballRadius = previewBall.getRadius();
+        
+        float dx = lastTouchX - startX;
+        float dy = lastTouchY - startY;
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 0) {
+            float vX = (dx / distance) * Ball.SPEED;
+            float vY = (dy / distance) * Ball.SPEED;
+            
+            Path path = new Path();
+            float simX = startX;
+            float simY = startY;
+            
+            // Start the arrow a bit after the ball
+            float offsetSteps = 2; 
+            for(int i=0; i<offsetSteps; i++) {
+                vY += Ball.GRAVITY_ACCELERATION * Ball.TIME_STEP;
+                simX += vX * Ball.TIME_STEP;
+                simY += vY * Ball.TIME_STEP;
+            }
+            
+            path.moveTo(simX, simY);
+
+            // Simulation loop with accurate intersection to prevent "bending"
+            for (int i = 0; i < 11; i++) {
+                float prevSimX = simX;
+                float prevSimY = simY;
+                
+                vY += Ball.GRAVITY_ACCELERATION * Ball.TIME_STEP;
+                simX += vX * Ball.TIME_STEP;
+                simY += vY * Ball.TIME_STEP;
+
+                boolean hit = false;
+                for (Peg peg : pegs) {
+                    float pdx = simX - peg.getX();
+                    float pdy = simY - peg.getY();
+                    float dist = (float) Math.sqrt(pdx * pdx + pdy * pdy);
+                    float rSum = ballRadius + peg.getRadius();
+                    
+                    if (dist < rSum) {
+                        float prevPdx = prevSimX - peg.getX();
+                        float prevPdy = prevSimY - peg.getY();
+                        float prevDist = (float) Math.sqrt(prevPdx * prevPdx + prevPdy * prevPdy);
+                        
+                        // Linear interpolation finds the point on the existing straight line
+                        if (prevDist > rSum && Math.abs(dist - prevDist) > 0.001f) {
+                            float t = (rSum - prevDist) / (dist - prevDist);
+                            simX = prevSimX + t * (simX - prevSimX);
+                            simY = prevSimY + t * (simY - prevSimY);
+                        }
+                        hit = true;
+                        break;
+                    }
+                }
+
+                path.lineTo(simX, simY);
+                if (hit) break;
+            }
+            
+            canvas.drawPath(path, trajectoryPaint);
         }
     }
 
@@ -318,6 +401,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
+        lastTouchX = x;
+        lastTouchY = y;
         
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:

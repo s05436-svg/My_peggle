@@ -17,11 +17,11 @@ public class Ball extends BaseShape {
     private float velocityY;
     private float radius;
     private Bitmap bitmap;
-    private final float speed = 55.0f; // Constant speed for the ball
+    public static final float SPEED = 55.0f; 
     private boolean isMoving = false;
-    private static final float GRAVITY_ACCELERATION = 6.0f; // Constant downward force
-    private static final float TIME_STEP = 0.37f;
-    private static final float DAMPING_FACTOR = 0.8f; // Energy loss on collision
+    public static final float GRAVITY_ACCELERATION = 6.0f; 
+    public static final float TIME_STEP = 0.37f;
+    private static final float DAMPING_FACTOR = 0.8f; 
     private boolean isDeactivated = false;
     private List<Peg> hitPegs = new ArrayList<>();
 
@@ -50,11 +50,11 @@ public class Ball extends BaseShape {
     public float getRadius() {
         return radius;
     }
-    public float getX() { // Getter for x coordinate
+    public float getX() { 
         return x;
     }
 
-    public float getY() { // Getter for y coordinate
+    public float getY() { 
         return y;
     }
 
@@ -64,8 +64,8 @@ public class Ball extends BaseShape {
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
         if (distance > 0) {
-            velocityX = (dx / distance) * speed;
-            velocityY = (dy / distance) * speed;
+            velocityX = (dx / distance) * SPEED;
+            velocityY = (dy / distance) * SPEED;
             isMoving = true;
         }
     }
@@ -75,7 +75,6 @@ public class Ball extends BaseShape {
         float normalY = y - peg.getY();
         float distance = (float) Math.sqrt(normalX * normalX + normalY * normalY);
 
-        // Avoid division by zero
         if (distance == 0) return false;
 
         float unitNormalX = normalX / distance;
@@ -83,7 +82,6 @@ public class Ball extends BaseShape {
 
         float dotProduct = velocityX * unitNormalX + velocityY * unitNormalY;
 
-        // Don't reflect if the objects are already moving apart
         if (dotProduct >= 0) {
             return false;
         }
@@ -92,11 +90,9 @@ public class Ball extends BaseShape {
             hitPegs.add(peg);
         }
 
-        // Apply the reflection formula: v' = v - 2 * (v . n) * n
         velocityX = velocityX - 2 * dotProduct * unitNormalX;
         velocityY = velocityY - 2 * dotProduct * unitNormalY;
 
-        // If the ball hits the bottom of the peg, apply damping
         if (y > peg.getY()) {
             velocityX *= DAMPING_FACTOR;
             velocityY *= DAMPING_FACTOR;
@@ -107,20 +103,15 @@ public class Ball extends BaseShape {
 
     public void update(int screenWidth, int screenHeight) {
         if (isMoving) {
-            // Apply gravity to vertical velocity (v = u + at)
             velocityY += GRAVITY_ACCELERATION * TIME_STEP;
 
-            // Update position based on velocity (s = s + vt)
             x += velocityX * TIME_STEP;
             y += velocityY * TIME_STEP;
 
-            // Define the game boundaries to be a square, assuming landscape mode
-            // where screenWidth is greater than screenHeight.
             float gameAreaWidth = screenHeight;
             float gameLeft = (screenWidth - gameAreaWidth) / 2;
             float gameRight = gameLeft + gameAreaWidth;
 
-            // Check for wall collisions
             if (x - radius < gameLeft) {
                 x = gameLeft + radius;
                 velocityX *= -1;
@@ -129,12 +120,12 @@ public class Ball extends BaseShape {
                 velocityX *= -1;
             }
 
-            if (y - radius < 0) { // Top boundary collision
+            if (y - radius < 0) { 
                 y = radius;
                 velocityY *= -1;
             }
 
-            if (y - radius > screenHeight) { // Deactivate when falling off the bottom
+            if (y - radius > screenHeight) {
                 deactivate();
             }
         }
