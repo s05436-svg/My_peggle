@@ -45,6 +45,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private int remainingBalls = 10;
     private Paint circlePaint;
     private Paint textPaint;
+    
+    private Ball previewBall;
 
     public CustomSurfaceView(Context context) {
         super(context);
@@ -286,6 +288,11 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             shape.draw(canvas);
         }
         
+        // Draw the preview ball inside cannon if it exists
+        if (previewBall != null) {
+            previewBall.draw(canvas);
+        }
+        
         // Draw the animating (fading) pegs
         for (Peg p : animatingPegs) {
             p.draw(canvas);
@@ -299,7 +306,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_HOVER_MOVE) {
-            if (cannon != null) {
+            if (cannon != null && previewBall == null) {
                 cannon.aim(event.getX(), event.getY());
             }
             return true;
@@ -309,13 +316,31 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (cannon != null && balls.isEmpty() && (System.currentTimeMillis() - ballDeactivatedTime > 1000) && remainingBalls > 0) {
-                cannon.aim(event.getX(), event.getY());
-                Ball newBall = cannon.fire(getContext());
-                newBall.setTarget(event.getX(), event.getY());
-                balls.add(newBall);
-            }
+        float x = event.getX();
+        float y = event.getY();
+        
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                if (cannon != null && balls.isEmpty() && (System.currentTimeMillis() - ballDeactivatedTime > 1000) && remainingBalls > 0) {
+                    cannon.aim(x, y);
+                    previewBall = cannon.fire(getContext());
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (cannon != null && previewBall != null) {
+                    cannon.aim(x, y);
+                    previewBall.setPosition(cannon.getNozzleX(), cannon.getNozzleY());
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (cannon != null && previewBall != null) {
+                    cannon.aim(x, y);
+                    previewBall.setPosition(cannon.getNozzleX(), cannon.getNozzleY());
+                    previewBall.setTarget(x, y);
+                    balls.add(previewBall);
+                    previewBall = null;
+                }
+                break;
         }
         return true;
     }

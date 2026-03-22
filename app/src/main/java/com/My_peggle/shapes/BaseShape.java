@@ -11,6 +11,14 @@ public abstract class BaseShape {
         this.y = y;
     }
 
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
     public void setPosition(float x, float y) {
         if (isMovable) {
             this.x = x;

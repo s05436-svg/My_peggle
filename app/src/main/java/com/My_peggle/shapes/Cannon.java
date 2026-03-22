@@ -29,14 +29,22 @@ public class Cannon extends BaseShape {
         this.rotation = (float) Math.toDegrees(Math.atan2(dy, dx)) - 90;
     }
 
-    public Ball fire(Context context) {
-        // Convert rotation back to radians for trigonometry, adjusting for the initial +90 offset
-        float angleInRadians = (float) Math.toRadians(rotation - 90);
-        float nozzleDistance = height / 2; // Fire from the tip of the cannon
-        float fireX = x + nozzleDistance * (float) Math.cos(angleInRadians);
-        float fireY = y + nozzleDistance * (float) Math.sin(angleInRadians);
+    public float getNozzleX() {
+        float angleInRadians = (float) Math.toRadians(rotation + 90);
+        // Reduced distance to make the ball sit exactly on the barrel
+        float nozzleDistance = height * 0.37f;
+        return x + nozzleDistance * (float) Math.cos(angleInRadians);
+    }
 
-        return new Ball(context, fireX, fireY, 15);
+    public float getNozzleY() {
+        float angleInRadians = (float) Math.toRadians(rotation + 90);
+        // Reduced distance to make the ball sit exactly on the barrel
+        float nozzleDistance = height * 0.37f;
+        return y + nozzleDistance * (float) Math.sin(angleInRadians);
+    }
+
+    public Ball fire(Context context) {
+        return new Ball(context, getNozzleX(), getNozzleY(), 15);
     }
 
     @Override
