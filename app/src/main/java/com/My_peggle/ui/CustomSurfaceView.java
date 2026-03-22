@@ -81,21 +81,21 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             int containerHeight = 1450;
             
             ballContainerBitmap = Bitmap.createScaledBitmap(originalBallContainer, containerWidth, containerHeight, true);
-            ballContainerX = ((viewWidth - containerWidth) / 4f) - 200f;
+            ballContainerX = ((viewWidth - containerWidth) / 4f) - 130f;
             ballContainerY = viewHeight - containerHeight + 200;
 
             // Initialize balls inside the container
             containerBalls.clear();
             animatingBalls.clear();
             float startYOffset = 380f; // Below the counter
-            float bottomLimit = containerHeight - 220f;
+            float bottomLimit = containerHeight - 225f;
             float availableHeight = bottomLimit - startYOffset;
             
             float verticalStep = availableHeight / 10f;
             float cBallRadius = (verticalStep / 2f) * 1.5f;
             float centerX = ballContainerX + containerWidth / 2f;
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 9; i++) {
                 float ballY = ballContainerY + bottomLimit - (i * verticalStep) - (verticalStep / 2f);
                 containerBalls.add(new Ball(getContext(), centerX, ballY, cBallRadius));
             }

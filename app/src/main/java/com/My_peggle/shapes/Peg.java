@@ -67,7 +67,7 @@ public class Peg extends BaseShape {
 
     public boolean updateAnimation() {
         if (isAnimating) {
-            animationProgress += 0.08f; // Speed of animation
+            animationProgress += 0.2f; // Speed of animation
             return animationProgress >= 1.0f; // Returns true when done
         }
         return false;
