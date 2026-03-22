@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 
 import com.My_peggle.R;
 
@@ -19,6 +20,11 @@ public class Peg extends BaseShape {
     private Bitmap bitmap;
     private Bitmap brightBitmap;
     private final PegType type;
+    
+    // Animation fields
+    private boolean isAnimating = false;
+    private float animationProgress = 0f; // 0 to 1
+    private Paint animationPaint;
 
     public Peg(Context context, float x, float y, float radius, PegType type) {
         super(x, y);
@@ -26,6 +32,9 @@ public class Peg extends BaseShape {
         this.type = type;
         this.isHit = false;
         setMovable(false);
+        
+        animationPaint = new Paint();
+        animationPaint.setAntiAlias(true);
 
         int resId;
         int brightResId;
@@ -52,6 +61,18 @@ public class Peg extends BaseShape {
         }
     }
 
+    public void startAnimation() {
+        isAnimating = true;
+    }
+
+    public boolean updateAnimation() {
+        if (isAnimating) {
+            animationProgress += 0.08f; // Speed of animation
+            return animationProgress >= 1.0f; // Returns true when done
+        }
+        return false;
+    }
+
     public void hit() {
         isHit = true;
     }
@@ -60,11 +81,11 @@ public class Peg extends BaseShape {
         return radius;
     }
 
-    public float getX() { // Getter for x coordinate
+    public float getX() { 
         return x;
     }
 
-    public float getY() { // Getter for y coordinate
+    public float getY() { 
         return y;
     }
 
@@ -76,15 +97,26 @@ public class Peg extends BaseShape {
         return isHit;
     }
 
-    public void setHit(boolean hit) {
-        isHit = hit;
-    }
-
     @Override
     public void draw(Canvas canvas) {
         Bitmap currentBitmap = isHit ? brightBitmap : bitmap;
         if (currentBitmap != null) {
-            canvas.drawBitmap(currentBitmap, x - radius, y - radius, null);
+            if (isAnimating) {
+                // Expand effect: scale from 1.0 to 1.5
+                float scale = 1.0f + (animationProgress * 0.5f);
+                // Fade effect: alpha from 255 to 0
+                int alpha = (int) (255 * (1.0f - animationProgress));
+                animationPaint.setAlpha(alpha);
+                
+                float drawRadius = radius * scale;
+                canvas.save();
+                // We draw using the alpha paint
+                canvas.drawBitmap(Bitmap.createScaledBitmap(currentBitmap, (int)(drawRadius*2), (int)(drawRadius*2), true), 
+                                x - drawRadius, y - drawRadius, animationPaint);
+                canvas.restore();
+            } else {
+                canvas.drawBitmap(currentBitmap, x - radius, y - radius, null);
+            }
         }
     }
 

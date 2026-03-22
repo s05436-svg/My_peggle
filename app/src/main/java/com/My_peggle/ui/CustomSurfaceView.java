@@ -26,6 +26,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private final List<BaseShape> shapes = new ArrayList<>();
     private final List<Ball> balls = new ArrayList<>();
     private final List<Peg> pegs = new ArrayList<>();
+    private final List<Peg> animatingPegs = new ArrayList<>();
     private final List<Ball> containerBalls = new ArrayList<>();
     private final List<Ball> animatingBalls = new ArrayList<>();
     private boolean shapesInitialized = false;
@@ -87,18 +88,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             containerBalls.clear();
             animatingBalls.clear();
             float startYOffset = 380f; // Below the counter
-            float bottomLimit = containerHeight - 220f; // Raised to move the stack up as requested
+            float bottomLimit = containerHeight - 220f;
             float availableHeight = bottomLimit - startYOffset;
             
-            // Calculate a vertical step between ball centers
             float verticalStep = availableHeight / 10f;
-            // Radius is set larger than verticalStep/2 to ensure visual overlap
-            // and compensate for transparent padding in the ball image.
             float cBallRadius = (verticalStep / 2f) * 1.5f;
             float centerX = ballContainerX + containerWidth / 2f;
 
             for (int i = 0; i < 10; i++) {
-                // Stack them tightly with overlap from bottom to top
                 float ballY = ballContainerY + bottomLimit - (i * verticalStep) - (verticalStep / 2f);
                 containerBalls.add(new Ball(getContext(), centerX, ballY, cBallRadius));
             }
@@ -160,11 +157,20 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         Iterator<Ball> animIterator = animatingBalls.iterator();
         while (animIterator.hasNext()) {
             Ball b = animIterator.next();
-            float newY = b.getY() - 40; // Speed of suction
+            float newY = b.getY() - 40; 
             if (newY <= counterY) {
                 animIterator.remove();
             } else {
                 b.setPosition(b.getX(), newY);
+            }
+        }
+        
+        // Peg fade animation logic
+        Iterator<Peg> pegAnimIterator = animatingPegs.iterator();
+        while (pegAnimIterator.hasNext()) {
+            Peg p = pegAnimIterator.next();
+            if (p.updateAnimation()) {
+                pegAnimIterator.remove();
             }
         }
 
@@ -173,6 +179,11 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 Peg pegToRemove = pegsToClear.get(pegClearIndex);
                 pegs.remove(pegToRemove);
                 shapes.remove(pegToRemove);
+                
+                // Start fade animation instead of just deleting
+                pegToRemove.startAnimation();
+                animatingPegs.add(pegToRemove);
+                
                 pegClearIndex++;
                 if (pegClearIndex < pegsToClear.size()) {
                     long delay = 700 / pegsToClear.size();
@@ -254,17 +265,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         if (ballContainerBitmap != null) {
             canvas.drawBitmap(ballContainerBitmap, ballContainerX, ballContainerY, null);
 
-            // Draw balls inside the container
             for (Ball b : containerBalls) {
                 b.draw(canvas);
             }
 
-            // Draw animating balls
             for (Ball b : animatingBalls) {
                 b.draw(canvas);
             }
 
-            // Draw remaining balls counter ON TOP of the animating balls
             float circleX = ballContainerX + ballContainerBitmap.getWidth() / 2f;
             float circleY = ballContainerY + 280;
             float radius = 50;
@@ -277,6 +285,12 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         for (BaseShape shape : shapes) {
             shape.draw(canvas);
         }
+        
+        // Draw the animating (fading) pegs
+        for (Peg p : animatingPegs) {
+            p.draw(canvas);
+        }
+
          for (Ball ball : balls) {
             ball.draw(canvas);
         }
