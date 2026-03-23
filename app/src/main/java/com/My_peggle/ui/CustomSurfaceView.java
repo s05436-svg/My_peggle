@@ -362,8 +362,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         canvas.drawRoundRect(fillRect, 15, 15, barFillPaint);
 
         // Draw score text above and target below
-        canvas.drawText(String.valueOf(displayScore), xPos + barWidth / 2, yPos - 20, barTextPaint);
-        canvas.drawText("1500", xPos + barWidth / 2, yPos + barHeight + 40, barTextPaint);
+        canvas.drawText("1500", xPos + barWidth / 2, yPos - 20, barTextPaint);
+        canvas.drawText(String.valueOf(displayScore), xPos + barWidth / 2, yPos + barHeight + 40, barTextPaint);
     }
 
     private void drawTrajectory(Canvas canvas) {
