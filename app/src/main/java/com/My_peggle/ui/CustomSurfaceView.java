@@ -105,13 +105,11 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private void initShapes(int viewWidth, int viewHeight) {
-        // Load and scale the background
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.peggle_background_new);
         if (originalBackground != null) {
             backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, viewWidth, viewHeight, true);
         }
 
-        // Load and position the ball container
         Bitmap originalBallContainer = BitmapFactory.decodeResource(getResources(), R.drawable.ball_container);
         if (originalBallContainer != null) {
             float ballDiameter = 30f; 
@@ -141,28 +139,54 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         cannon = new Cannon(getContext(), viewWidth/2f, 100f, 700f, 350f);
         shapes.add(cannon);
 
+        createButterflyPattern(viewWidth, viewHeight);
+    }
+
+    private void createButterflyPattern(int viewWidth, int viewHeight) {
+        float centerX = viewWidth / 2f;
+        float centerY = viewHeight / 2f + 80f;
+        float scale = 140f; 
+        float pegRadius = 25f;
+        float minSpacing = pegRadius * 2.5f; 
         Random random = new Random();
-        float gameAreaWidth = viewHeight;
-        float gameLeft = (viewWidth - gameAreaWidth) / 2;
-        float pegRadius = 30;
 
-        float minX = gameLeft + pegRadius;
-        float maxX = gameLeft + gameAreaWidth - pegRadius;
-        float spawnWidth = maxX - minX;
+        float lastX = -10000, lastY = -10000;
 
-        float minY = 300;
-        float maxY = viewHeight - 500;
-        float spawnHeight = maxY - minY;
+        for (float t = 0; t < 2 * Math.PI; t += 0.01f) {
+            double multiplier = Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.pow(Math.sin(t / 12), 5);
+            float x = (float) (Math.sin(t) * multiplier) * scale;
+            float y = (float) (-Math.cos(t) * multiplier) * scale;
 
-        if (spawnWidth > 0 && spawnHeight > 0) {
-            for (int i = 0; i < 20; i++) {
-                float x = minX + random.nextFloat() * spawnWidth;
-                float y = minY + random.nextFloat() * spawnHeight;
+            float dist = (float) Math.sqrt(Math.pow(x - lastX, 2) + Math.pow(y - lastY, 2));
 
-                Peg.PegType type = (random.nextFloat() > 0.3) ? Peg.PegType.BLUE : Peg.PegType.ORANGE; 
-                Peg peg = new Peg(getContext(), x, y, pegRadius, type);
-                shapes.add(peg);
+            if (dist >= minSpacing) {
+                float finalX = centerX + x;
+                float finalY = centerY + y;
+
+                Peg.PegType type = (random.nextFloat() > 0.3) ? Peg.PegType.BLUE : Peg.PegType.ORANGE;
+                Peg peg = new Peg(getContext(), finalX, finalY, pegRadius, type);
                 pegs.add(peg);
+                shapes.add(peg);
+
+                lastX = x;
+                lastY = y;
+            }
+        }
+
+        float bodyHeight = scale * 1.2f;
+        for (float yOffset = -bodyHeight / 2; yOffset <= bodyHeight / 2; yOffset += minSpacing) {
+            boolean overlap = false;
+            for (Peg p : pegs) {
+                float d = (float) Math.sqrt(Math.pow(centerX - p.getX(), 2) + Math.pow(centerY + yOffset - p.getY(), 2));
+                if (d < minSpacing * 0.8f) {
+                    overlap = true;
+                    break;
+                }
+            }
+            if (!overlap) {
+                Peg peg = new Peg(getContext(), centerX, centerY + yOffset, pegRadius, Peg.PegType.ORANGE);
+                pegs.add(peg);
+                shapes.add(peg);
             }
         }
     }
@@ -172,9 +196,35 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         while (ballIterator.hasNext()) {
             Ball ball = ballIterator.next();
             ball.update(screenWidth, screenHeight);
+            
+            // Stuck detection: If velocity is extremely low while ball should be moving
+            if (Math.abs(ball.getVelocityX()) < 0.5f && Math.abs(ball.getVelocityY()) < 1.0f) {
+                Peg lowestPeg = null;
+                float maxPegY = -1;
+                
+                for (Peg peg : pegs) {
+                    float dx = ball.getX() - peg.getX();
+                    float dy = ball.getY() - peg.getY();
+                    float dist = (float) Math.sqrt(dx * dx + dy * dy);
+                    // Use a slightly larger radius for detection to find pegs causing the "jam"
+                    if (dist < (ball.getRadius() + peg.getRadius()) * 1.2f) {
+                        if (peg.getY() > maxPegY) {
+                            maxPegY = peg.getY();
+                            lowestPeg = peg;
+                        }
+                    }
+                }
+                
+                if (lowestPeg != null) {
+                    pegs.remove(lowestPeg);
+                    shapes.remove(lowestPeg);
+                    lowestPeg.startAnimation();
+                    animatingPegs.add(lowestPeg);
+                }
+            }
+
             if (ball.isDeactivated()) {
                 remainingBalls--; 
-                // When ball is lost, current shot score is permanently added to total
                 totalScore += currentShotScore;
                 currentShotScore = 0;
 
@@ -237,7 +287,11 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 float dx = ball.getX() - peg.getX();
                 float dy = ball.getY() - peg.getY();
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
-                float sumOfRadii = ball.getRadius() + peg.getRadius();
+                
+                // Visual correction: decrease effective ball radius for collision
+                // This makes the ball appear to touch the actual image before bouncing
+                float effectiveBallRadius = ball.getRadius() * 0.6f; 
+                float sumOfRadii = effectiveBallRadius + peg.getRadius();
 
                 if (distance < sumOfRadii) {
                     float overlap = sumOfRadii - distance;
@@ -322,7 +376,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             canvas.drawText(String.valueOf(remainingBalls), circleX, textY, textPaint);
         }
 
-        // Draw the Score Bar
         drawScoreBar(canvas);
 
         for (BaseShape shape : shapes) {
@@ -349,19 +402,15 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         float xPos = screenWidth - barWidth - 60f;
         float yPos = (screenHeight - barHeight) / 2f;
 
-        // Draw background
         RectF bgRect = new RectF(xPos, yPos, xPos + barWidth, yPos + barHeight);
         canvas.drawRoundRect(bgRect, 15, 15, barBackgroundPaint);
 
-        // Calculate fill based on total score + current shot progress
         int displayScore = Math.min(totalScore + currentShotScore, MAX_SCORE_BAR);
         float fillHeight = (displayScore / (float) MAX_SCORE_BAR) * barHeight;
 
-        // Draw fill (from bottom up)
         RectF fillRect = new RectF(xPos, yPos + barHeight - fillHeight, xPos + barWidth, yPos + barHeight);
         canvas.drawRoundRect(fillRect, 15, 15, barFillPaint);
 
-        // Draw score text above and target below
         canvas.drawText("1500", xPos + barWidth / 2, yPos - 20, barTextPaint);
         canvas.drawText(String.valueOf(displayScore), xPos + barWidth / 2, yPos + barHeight + 40, barTextPaint);
     }
@@ -407,7 +456,10 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     float pdx = simX - peg.getX();
                     float pdy = simY - peg.getY();
                     float dist = (float) Math.sqrt(pdx * pdx + pdy * pdy);
-                    float rSum = ballRadius + peg.getRadius();
+                    
+                    // Match the visual correction in trajectory too
+                    float effectiveBallRadius = ballRadius * 0.6f;
+                    float rSum = effectiveBallRadius + peg.getRadius();
                     
                     if (dist < rSum) {
                         float prevPdx = prevSimX - peg.getX();

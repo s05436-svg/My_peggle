@@ -58,6 +58,14 @@ public class Ball extends BaseShape {
         return y;
     }
 
+    public float getVelocityX() {
+        return velocityX;
+    }
+
+    public float getVelocityY() {
+        return velocityY;
+    }
+
     public void setTarget(float targetX, float targetY) {
         float dx = targetX - x;
         float dy = targetY - y;
