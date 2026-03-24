@@ -4,6 +4,37 @@
     android:layout_height="match_parent"
     android:background="@drawable/peggle_background_new">
 
+    <!-- Top bar for user info and logout -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#AA000000"
+        android:padding="10dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/welcomeText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Welcome!"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Logout"
+            android:textSize="14sp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:padding="10dp"/>
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -14,10 +45,9 @@
         android:padding="30dp">
 
         <TextView
-            android:id="@+id/welcomeText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Welcome to Peggle!"
+            android:text="Main Menu"
             android:textColor="@android:color/white"
             android:textSize="32sp"
             android:textStyle="bold"

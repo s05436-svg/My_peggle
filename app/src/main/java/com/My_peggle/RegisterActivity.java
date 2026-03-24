@@ -49,10 +49,20 @@ public class RegisterActivity extends AppCompatActivity {
     private void registerButtonClick() {
         Log.d(TAG, "Register button clicked");
 
+        // We use the text from usernameEditText because RegistrationManager 
+        // will convert it to a valid email format internally (username@peggle.com)
+        String username = usernameEditText.getText().toString().trim();
+        String password = passwordEditText.getText().toString().trim();
+
+        if (username.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Please fill in username and password", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         RegistrationManager registrationManager = new RegistrationManager(RegisterActivity.this);
         registrationManager.startRegistration(
-                emailEditText.getText().toString(),
-                passwordEditText.getText().toString(),
+                username,
+                password,
                 new RegistrationManager.OnResultCallback(){
                     @Override
                     public void onResult(boolean success, String message) {
