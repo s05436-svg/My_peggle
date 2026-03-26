@@ -16,6 +16,7 @@ import android.view.SurfaceView;
 import com.My_peggle.R;
 import com.My_peggle.shapes.Ball;
 import com.My_peggle.shapes.BaseShape;
+import com.My_peggle.shapes.BottomHole;
 import com.My_peggle.shapes.Cannon;
 import com.My_peggle.shapes.Peg;
 
@@ -32,12 +33,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private final List<Peg> animatingPegs = new ArrayList<>();
     private final List<Ball> containerBalls = new ArrayList<>();
     private final List<Ball> animatingBalls = new ArrayList<>();
+    private final List<Ball> enteringBalls = new ArrayList<>();
     private boolean shapesInitialized = false;
     private Bitmap backgroundBitmap;
     private Bitmap ballContainerBitmap;
     private float ballContainerX;
     private float ballContainerY;
     private Cannon cannon;
+    private BottomHole bottomHole;
     private int screenWidth;
     private int screenHeight;
     private long ballDeactivatedTime = 0;
@@ -46,6 +49,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private int pegClearIndex = 0;
 
     private int remainingBalls = 10;
+    private float containerBallRadius;
     private int totalScore = 0;
     private int currentShotScore = 0;
     private final int MAX_SCORE_BAR = 1500;
@@ -56,6 +60,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private Paint barBackgroundPaint;
     private Paint barFillPaint;
     private Paint barTextPaint;
+    private Paint glowPaint;
     
     private Ball previewBall;
     private float lastTouchX, lastTouchY;
@@ -63,6 +68,13 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     // For stuck detection
     private float lastBallX, lastBallY;
     private int stuckFrames = 0;
+
+    // Glow and Delay features
+    private long glowStartTime = 0;
+    private float glowX;
+    private static final long GLOW_DURATION = 600;
+    private long pendingBallEntryTime = 0;
+    private boolean needsLoadingAfterEntry = false;
 
     public CustomSurfaceView(Context context) {
         super(context);
@@ -106,6 +118,11 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         barTextPaint.setTextAlign(Paint.Align.CENTER);
         barTextPaint.setFakeBoldText(true);
         barTextPaint.setAntiAlias(true);
+
+        glowPaint = new Paint();
+        glowPaint.setColor(Color.YELLOW);
+        glowPaint.setStyle(Paint.Style.FILL);
+        glowPaint.setAntiAlias(true);
     }
 
     private void initShapes(int viewWidth, int viewHeight) {
@@ -126,22 +143,29 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
             containerBalls.clear();
             animatingBalls.clear();
+            enteringBalls.clear();
             float startYOffset = 380f; 
             float bottomLimit = containerHeight - 225f;
             float availableHeight = bottomLimit - startYOffset;
             
             float verticalStep = availableHeight / 10f;
-            float cBallRadius = (verticalStep / 2f) * 1.5f;
+            containerBallRadius = (verticalStep / 2f) * 1.5f;
             float centerX = ballContainerX + containerWidth / 2f;
 
             for (int i = 0; i < 9; i++) {
                 float ballY = ballContainerY + bottomLimit - (i * verticalStep) - (verticalStep / 2f);
-                containerBalls.add(new Ball(getContext(), centerX, ballY, cBallRadius));
+                containerBalls.add(new Ball(getContext(), centerX, ballY, containerBallRadius));
             }
         }
 
         cannon = new Cannon(getContext(), viewWidth/2f, 100f, 700f, 350f);
         shapes.add(cannon);
+
+        float holeWidth = 280f;
+        float holeHeight = 160f;
+        // Adjust Y so only a small part is out of frame (approx 35px)
+        bottomHole = new BottomHole(getContext(), viewWidth / 2f, viewHeight - 30, holeWidth, holeHeight);
+        shapes.add(bottomHole);
 
         createButterflyPattern(viewWidth, viewHeight);
     }
@@ -196,6 +220,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     public void update() {
+        float gameAreaWidth = screenHeight;
+        float gameLeft = (screenWidth - gameAreaWidth) / 2;
+        float gameRight = gameLeft + gameAreaWidth;
+        
+        if (bottomHole != null) {
+            bottomHole.update(gameLeft, gameRight);
+        }
+
         Iterator<Ball> ballIterator = balls.iterator();
         while (ballIterator.hasNext()) {
             Ball ball = ballIterator.next();
@@ -235,16 +267,29 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 }
             }
 
-            if (ball.isDeactivated()) {
-                remainingBalls--; 
+            boolean caughtInHole = false;
+            if (bottomHole != null) {
+                float dx = ball.getX() - bottomHole.getX();
+                if (Math.abs(dx) < bottomHole.getWidth() / 2 + ball.getRadius() && 
+                    ball.getY() > bottomHole.getY() - bottomHole.getHeight() / 2) {
+                    caughtInHole = true;
+                }
+            }
+
+            if (ball.isDeactivated() || caughtInHole) {
+                if (caughtInHole) {
+                    glowStartTime = System.currentTimeMillis();
+                    glowX = bottomHole.getX();
+                    pendingBallEntryTime = System.currentTimeMillis() + 500;
+                    needsLoadingAfterEntry = true;
+                } else {
+                    triggerLoadingAnimation();
+                }
+                
                 totalScore += currentShotScore;
                 currentShotScore = 0;
                 stuckFrames = 0;
 
-                if (!containerBalls.isEmpty()) {
-                    Ball topBall = containerBalls.remove(containerBalls.size() - 1);
-                    animatingBalls.add(topBall);
-                }
                 pegsToClear.addAll(ball.getHitPegs());
                 ballIterator.remove();
                 ballDeactivatedTime = System.currentTimeMillis();
@@ -253,13 +298,49 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             }
         }
 
+        if (pendingBallEntryTime != 0 && System.currentTimeMillis() >= pendingBallEntryTime) {
+            float centerX = ballContainerX + (ballContainerBitmap != null ? ballContainerBitmap.getWidth() / 2f : 0);
+            float startY = ballContainerY + 280;
+            Ball enteringBall = new Ball(getContext(), centerX, startY, containerBallRadius);
+            enteringBalls.add(enteringBall);
+            pendingBallEntryTime = 0;
+        }
+
         float counterY = ballContainerY + 280;
         Iterator<Ball> animIterator = animatingBalls.iterator();
         while (animIterator.hasNext()) {
             Ball b = animIterator.next();
-            float newY = b.getY() - 40; 
+            float newY = b.getY() - 30; 
             if (newY <= counterY) {
                 animIterator.remove();
+            } else {
+                b.setPosition(b.getX(), newY);
+            }
+        }
+
+        Iterator<Ball> enterIterator = enteringBalls.iterator();
+        while (enterIterator.hasNext()) {
+            Ball b = enterIterator.next();
+            
+            float containerHeight = 1450;
+            float startYOffset = 380f; 
+            float bottomLimit = containerHeight - 225f;
+            float availableHeight = bottomLimit - startYOffset;
+            float verticalStep = availableHeight / 10f;
+            
+            float targetY = ballContainerY + bottomLimit - (containerBalls.size() * verticalStep) - (verticalStep / 2f);
+            
+            float newY = b.getY() + 30;
+            if (newY >= targetY) {
+                b.setPosition(b.getX(), targetY);
+                containerBalls.add(b);
+                remainingBalls++; // Increment when ball reaches container
+                enterIterator.remove();
+                
+                if (enteringBalls.isEmpty() && needsLoadingAfterEntry) {
+                    triggerLoadingAnimation();
+                    needsLoadingAfterEntry = false;
+                }
             } else {
                 b.setPosition(b.getX(), newY);
             }
@@ -294,6 +375,16 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         checkCollisions();
     }
 
+    private void triggerLoadingAnimation() {
+        if (remainingBalls > 0) {
+            remainingBalls--;
+            if (!containerBalls.isEmpty()) {
+                Ball topBall = containerBalls.remove(containerBalls.size() - 1);
+                animatingBalls.add(topBall);
+            }
+        }
+    }
+
     private void checkCollisions() {
         for (Ball ball : balls) {
             for (Peg peg : pegs) {
@@ -301,7 +392,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 float dy = ball.getY() - peg.getY();
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
                 
-                // GREATLY reduced effective radius to make ball touch the peg image
                 float effectiveBallRadius = ball.getRadius() * 0.15f; 
                 float sumOfRadii = effectiveBallRadius + peg.getRadius();
 
@@ -368,6 +458,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             canvas.drawColor(Color.DKGRAY);
         }
 
+        drawHoleGlow(canvas);
+
         if (ballContainerBitmap != null) {
             canvas.drawBitmap(ballContainerBitmap, ballContainerX, ballContainerY, null);
 
@@ -376,6 +468,10 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             }
 
             for (Ball b : animatingBalls) {
+                b.draw(canvas);
+            }
+            
+            for (Ball b : enteringBalls) {
                 b.draw(canvas);
             }
 
@@ -405,6 +501,21 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
          for (Ball ball : balls) {
             ball.draw(canvas);
+        }
+    }
+
+    private void drawHoleGlow(Canvas canvas) {
+        if (System.currentTimeMillis() - glowStartTime < GLOW_DURATION) {
+            long elapsed = System.currentTimeMillis() - glowStartTime;
+            float ratio = (float) elapsed / GLOW_DURATION;
+            int alpha = (int) (180 * (1.0f - ratio));
+            glowPaint.setAlpha(alpha);
+            
+            float scale = 1.0f + ratio * 0.8f; 
+            float w = 300 * scale;
+            float h = 150 * scale;
+            RectF glowRect = new RectF(glowX - w/2, screenHeight - h, glowX + w/2, screenHeight + 50);
+            canvas.drawOval(glowRect, glowPaint);
         }
     }
 
@@ -469,7 +580,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     float pdy = simY - peg.getY();
                     float dist = (float) Math.sqrt(pdx * pdx + pdy * pdy);
                     
-                    // Reduced radius in trajectory to match logic
                     float effectiveBallRadius = ballRadius * 0.15f;
                     float rSum = effectiveBallRadius + peg.getRadius();
                     
