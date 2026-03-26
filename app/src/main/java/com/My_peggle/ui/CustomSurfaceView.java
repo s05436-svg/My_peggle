@@ -62,6 +62,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private Paint barTextPaint;
     private Paint glowPaint;
     
+    private Ball activeBall; // Persistent ball object for reuse
     private Ball previewBall;
     private float lastTouchX, lastTouchY;
 
@@ -75,6 +76,11 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private static final long GLOW_DURATION = 600;
     private long pendingBallEntryTime = 0;
     private boolean needsLoadingAfterEntry = false;
+
+    // Grid Optimization
+    private static final int CELL_SIZE = 150; 
+    private List<Peg>[][] pegGrid;
+    private int gridCols, gridRows;
 
     public CustomSurfaceView(Context context) {
         super(context);
@@ -163,11 +169,39 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
         float holeWidth = 280f;
         float holeHeight = 160f;
-        // Adjust Y so only a small part is out of frame (approx 35px)
         bottomHole = new BottomHole(getContext(), viewWidth / 2f, viewHeight - 30, holeWidth, holeHeight);
         shapes.add(bottomHole);
 
+        // Grid Initialization
+        gridCols = (viewWidth / CELL_SIZE) + 1;
+        gridRows = (viewHeight / CELL_SIZE) + 1;
+        pegGrid = new ArrayList[gridCols][gridRows];
+        for (int i = 0; i < gridCols; i++) {
+            for (int j = 0; j < gridRows; j++) {
+                pegGrid[i][j] = new ArrayList<>();
+            }
+        }
+
+        // Create the persistent active ball off-screen initially
+        activeBall = new Ball(getContext(), -1000, -1000, 15);
+
         createButterflyPattern(viewWidth, viewHeight);
+        updatePegGrid();
+    }
+
+    private void updatePegGrid() {
+        for (int i = 0; i < gridCols; i++) {
+            for (int j = 0; j < gridRows; j++) {
+                pegGrid[i][j].clear();
+            }
+        }
+        for (Peg peg : pegs) {
+            int col = (int) (peg.getX() / CELL_SIZE);
+            int row = (int) (peg.getY() / CELL_SIZE);
+            if (col >= 0 && col < gridCols && row >= 0 && row < gridRows) {
+                pegGrid[col][row].add(peg);
+            }
+        }
     }
 
     private void createButterflyPattern(int viewWidth, int viewHeight) {
@@ -228,55 +262,36 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             bottomHole.update(gameLeft, gameRight);
         }
 
-        Iterator<Ball> ballIterator = balls.iterator();
-        while (ballIterator.hasNext()) {
-            Ball ball = ballIterator.next();
-            ball.update(screenWidth, screenHeight);
+        if (activeBall != null && activeBall.isMoving()) {
+            activeBall.update(screenWidth, screenHeight);
             
-            float distMoved = (float) Math.sqrt(Math.pow(ball.getX() - lastBallX, 2) + Math.pow(ball.getY() - lastBallY, 2));
+            float distMoved = (float) Math.sqrt(Math.pow(activeBall.getX() - lastBallX, 2) + Math.pow(activeBall.getY() - lastBallY, 2));
             if (distMoved < 2.0f) {
                 stuckFrames++;
             } else {
                 stuckFrames = 0;
             }
-            lastBallX = ball.getX();
-            lastBallY = ball.getY();
+            lastBallX = activeBall.getX();
+            lastBallY = activeBall.getY();
 
             if (stuckFrames > 30) {
-                Peg lowestPeg = null;
-                float maxPegY = -1;
-                
-                for (Peg peg : pegs) {
-                    float dx = ball.getX() - peg.getX();
-                    float dy = ball.getY() - peg.getY();
-                    float dist = (float) Math.sqrt(dx * dx + dy * dy);
-                    if (dist < (ball.getRadius() + peg.getRadius()) * 1.5f) {
-                        if (peg.getY() > maxPegY) {
-                            maxPegY = peg.getY();
-                            lowestPeg = peg;
-                        }
-                    }
-                }
-                
+                Peg lowestPeg = findPegNearby(activeBall.getX(), activeBall.getY(), (activeBall.getRadius() + 25) * 1.5f);
                 if (lowestPeg != null) {
-                    pegs.remove(lowestPeg);
-                    shapes.remove(lowestPeg);
-                    lowestPeg.startAnimation();
-                    animatingPegs.add(lowestPeg);
+                    removePeg(lowestPeg);
                     stuckFrames = 0;
                 }
             }
 
             boolean caughtInHole = false;
             if (bottomHole != null) {
-                float dx = ball.getX() - bottomHole.getX();
-                if (Math.abs(dx) < bottomHole.getWidth() / 2 + ball.getRadius() && 
-                    ball.getY() > bottomHole.getY() - bottomHole.getHeight() / 2) {
+                float dx = activeBall.getX() - bottomHole.getX();
+                if (Math.abs(dx) < bottomHole.getWidth() / 2 + activeBall.getRadius() && 
+                    activeBall.getY() > bottomHole.getY() - bottomHole.getHeight() / 2) {
                     caughtInHole = true;
                 }
             }
 
-            if (ball.isDeactivated() || caughtInHole) {
+            if (activeBall.isDeactivated() || caughtInHole) {
                 if (caughtInHole) {
                     glowStartTime = System.currentTimeMillis();
                     glowX = bottomHole.getX();
@@ -290,12 +305,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 currentShotScore = 0;
                 stuckFrames = 0;
 
-                pegsToClear.addAll(ball.getHitPegs());
-                ballIterator.remove();
+                pegsToClear.addAll(activeBall.getHitPegs());
+                activeBall.reset(-2000, -2000); // Stop movement and move off-screen
                 ballDeactivatedTime = System.currentTimeMillis();
                 pegClearStartTime = ballDeactivatedTime + 300;
                 pegClearIndex = 0;
             }
+            
+            checkCollisions();
         }
 
         if (pendingBallEntryTime != 0 && System.currentTimeMillis() >= pendingBallEntryTime) {
@@ -321,22 +338,19 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         Iterator<Ball> enterIterator = enteringBalls.iterator();
         while (enterIterator.hasNext()) {
             Ball b = enterIterator.next();
-            
             float containerHeight = 1450;
             float startYOffset = 380f; 
             float bottomLimit = containerHeight - 225f;
             float availableHeight = bottomLimit - startYOffset;
             float verticalStep = availableHeight / 10f;
-            
             float targetY = ballContainerY + bottomLimit - (containerBalls.size() * verticalStep) - (verticalStep / 2f);
             
             float newY = b.getY() + 30;
             if (newY >= targetY) {
                 b.setPosition(b.getX(), targetY);
                 containerBalls.add(b);
-                remainingBalls++; // Increment when ball reaches container
+                remainingBalls++; 
                 enterIterator.remove();
-                
                 if (enteringBalls.isEmpty() && needsLoadingAfterEntry) {
                     triggerLoadingAnimation();
                     needsLoadingAfterEntry = false;
@@ -357,11 +371,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         if (!pegsToClear.isEmpty() && System.currentTimeMillis() >= pegClearStartTime) {
             if (pegClearIndex < pegsToClear.size()) {
                 Peg pegToRemove = pegsToClear.get(pegClearIndex);
-                pegs.remove(pegToRemove);
-                shapes.remove(pegToRemove);
-                pegToRemove.startAnimation();
-                animatingPegs.add(pegToRemove);
-                
+                removePeg(pegToRemove);
                 pegClearIndex++;
                 if (pegClearIndex < pegsToClear.size()) {
                     long delay = 700 / pegsToClear.size();
@@ -371,8 +381,42 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 }
             }
         }
+    }
 
-        checkCollisions();
+    private void removePeg(Peg peg) {
+        if (pegs.contains(peg)) {
+            pegs.remove(peg);
+            shapes.remove(peg);
+            peg.startAnimation();
+            animatingPegs.add(peg);
+            updatePegGrid();
+        }
+    }
+
+    private Peg findPegNearby(float x, float y, float radius) {
+        int col = (int) (x / CELL_SIZE);
+        int row = (int) (y / CELL_SIZE);
+        Peg lowestPeg = null;
+        float maxPegY = -1;
+
+        for (int i = col - 1; i <= col + 1; i++) {
+            for (int j = row - 1; j <= row + 1; j++) {
+                if (i >= 0 && i < gridCols && j >= 0 && j < gridRows) {
+                    for (Peg peg : pegGrid[i][j]) {
+                        float dx = x - peg.getX();
+                        float dy = y - peg.getY();
+                        float dist = (float) Math.sqrt(dx * dx + dy * dy);
+                        if (dist < radius) {
+                            if (peg.getY() > maxPegY) {
+                                maxPegY = peg.getY();
+                                lowestPeg = peg;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return lowestPeg;
     }
 
     private void triggerLoadingAnimation() {
@@ -386,29 +430,35 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private void checkCollisions() {
-        for (Ball ball : balls) {
-            for (Peg peg : pegs) {
-                float dx = ball.getX() - peg.getX();
-                float dy = ball.getY() - peg.getY();
-                float distance = (float) Math.sqrt(dx * dx + dy * dy);
-                
-                float effectiveBallRadius = ball.getRadius() * 0.15f; 
-                float sumOfRadii = effectiveBallRadius + peg.getRadius();
+        if (activeBall == null || !activeBall.isMoving()) return;
+        
+        int col = (int) (activeBall.getX() / CELL_SIZE);
+        int row = (int) (activeBall.getY() / CELL_SIZE);
 
-                if (distance < sumOfRadii) {
-                    float overlap = sumOfRadii - distance;
-                    float newX = ball.getX() + overlap * (dx / distance);
-                    float newY = ball.getY() + overlap * (dy / distance);
-                    ball.setPosition(newX, newY);
-
-                    if (ball.reflect(peg)) {
-                        if (!peg.isHit()) {
-                            if (peg.getType() == Peg.PegType.ORANGE) {
-                                currentShotScore += 100;
-                            } else {
-                                currentShotScore += 10;
+        for (int i = col - 1; i <= col + 1; i++) {
+            for (int j = row - 1; j <= row + 1; j++) {
+                if (i >= 0 && i < gridCols && j >= 0 && j < gridRows) {
+                    for (Peg peg : pegGrid[i][j]) {
+                        float dx = activeBall.getX() - peg.getX();
+                        float dy = activeBall.getY() - peg.getY();
+                        float distance = (float) Math.sqrt(dx * dx + dy * dy);
+                        float effectiveBallRadius = activeBall.getRadius() * 0.15f; 
+                        float sumOfRadii = effectiveBallRadius + peg.getRadius();
+                        if (distance < sumOfRadii) {
+                            float overlap = sumOfRadii - distance;
+                            float newX = activeBall.getX() + overlap * (dx / distance);
+                            float newY = activeBall.getY() + overlap * (dy / distance);
+                            activeBall.setPosition(newX, newY);
+                            if (activeBall.reflect(peg)) {
+                                if (!peg.isHit()) {
+                                    if (peg.getType() == Peg.PegType.ORANGE) {
+                                        currentShotScore += 100;
+                                    } else {
+                                        currentShotScore += 10;
+                                    }
+                                    peg.hit();
+                                }
                             }
-                            peg.hit();
                         }
                     }
                 }
@@ -462,46 +512,28 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
         if (ballContainerBitmap != null) {
             canvas.drawBitmap(ballContainerBitmap, ballContainerX, ballContainerY, null);
-
-            for (Ball b : containerBalls) {
-                b.draw(canvas);
-            }
-
-            for (Ball b : animatingBalls) {
-                b.draw(canvas);
-            }
-            
-            for (Ball b : enteringBalls) {
-                b.draw(canvas);
-            }
+            for (Ball b : containerBalls) b.draw(canvas);
+            for (Ball b : animatingBalls) b.draw(canvas);
+            for (Ball b : enteringBalls) b.draw(canvas);
 
             float circleX = ballContainerX + ballContainerBitmap.getWidth() / 2f;
             float circleY = ballContainerY + 280;
             float radius = 50;
-
             canvas.drawCircle(circleX, circleY, radius, circlePaint);
             float textY = circleY - ((textPaint.descent() + textPaint.ascent()) / 2);
             canvas.drawText(String.valueOf(remainingBalls), circleX, textY, textPaint);
         }
 
         drawScoreBar(canvas);
-
-        for (BaseShape shape : shapes) {
-            shape.draw(canvas);
-        }
+        for (BaseShape shape : shapes) shape.draw(canvas);
         
         if (previewBall != null) {
             drawTrajectory(canvas);
             previewBall.draw(canvas);
         }
         
-        for (Peg p : animatingPegs) {
-            p.draw(canvas);
-        }
-
-         for (Ball ball : balls) {
-            ball.draw(canvas);
-        }
+        for (Peg p : animatingPegs) p.draw(canvas);
+        if (activeBall != null && activeBall.isMoving()) activeBall.draw(canvas);
     }
 
     private void drawHoleGlow(Canvas canvas) {
@@ -510,7 +542,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             float ratio = (float) elapsed / GLOW_DURATION;
             int alpha = (int) (180 * (1.0f - ratio));
             glowPaint.setAlpha(alpha);
-            
             float scale = 1.0f + ratio * 0.8f; 
             float w = 300 * scale;
             float h = 150 * scale;
@@ -524,84 +555,77 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         float barHeight = screenHeight * 0.6f;
         float xPos = screenWidth - barWidth - 60f;
         float yPos = (screenHeight - barHeight) / 2f;
-
         RectF bgRect = new RectF(xPos, yPos, xPos + barWidth, yPos + barHeight);
         canvas.drawRoundRect(bgRect, 15, 15, barBackgroundPaint);
-
         int displayScore = Math.min(totalScore + currentShotScore, MAX_SCORE_BAR);
         float fillHeight = (displayScore / (float) MAX_SCORE_BAR) * barHeight;
-
         RectF fillRect = new RectF(xPos, yPos + barHeight - fillHeight, xPos + barWidth, yPos + barHeight);
         canvas.drawRoundRect(fillRect, 15, 15, barFillPaint);
-
         canvas.drawText("1500", xPos + barWidth / 2, yPos - 20, barTextPaint);
         canvas.drawText(String.valueOf(displayScore), xPos + barWidth / 2, yPos + barHeight + 40, barTextPaint);
     }
 
     private void drawTrajectory(Canvas canvas) {
         if (previewBall == null || cannon == null) return;
-
         float startX = previewBall.getX();
         float startY = previewBall.getY();
         float ballRadius = previewBall.getRadius();
-        
         float dx = lastTouchX - startX;
         float dy = lastTouchY - startY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
-
         if (distance > 0) {
             float vX = (dx / distance) * Ball.SPEED;
             float vY = (dy / distance) * Ball.SPEED;
-            
             Path path = new Path();
             float simX = startX;
             float simY = startY;
-            
             float offsetSteps = 2; 
             for(int i=0; i<offsetSteps; i++) {
                 vY += Ball.GRAVITY_ACCELERATION * Ball.TIME_STEP;
                 simX += vX * Ball.TIME_STEP;
                 simY += vY * Ball.TIME_STEP;
             }
-            
             path.moveTo(simX, simY);
-
             for (int i = 0; i < 11; i++) {
                 float prevSimX = simX;
                 float prevSimY = simY;
-                
                 vY += Ball.GRAVITY_ACCELERATION * Ball.TIME_STEP;
                 simX += vX * Ball.TIME_STEP;
                 simY += vY * Ball.TIME_STEP;
-
                 boolean hit = false;
-                for (Peg peg : pegs) {
-                    float pdx = simX - peg.getX();
-                    float pdy = simY - peg.getY();
-                    float dist = (float) Math.sqrt(pdx * pdx + pdy * pdy);
-                    
-                    float effectiveBallRadius = ballRadius * 0.15f;
-                    float rSum = effectiveBallRadius + peg.getRadius();
-                    
-                    if (dist < rSum) {
-                        float prevPdx = prevSimX - peg.getX();
-                        float prevPdy = prevSimY - peg.getY();
-                        float prevDist = (float) Math.sqrt(prevPdx * prevPdx + prevPdy * prevPdy);
-                        
-                        if (prevDist > rSum && Math.abs(dist - prevDist) > 0.001f) {
-                            float t = (rSum - prevDist) / (dist - prevDist);
-                            simX = prevSimX + t * (simX - prevSimX);
-                            simY = prevSimY + t * (simY - prevSimY);
+                
+                int col = (int) (simX / CELL_SIZE);
+                int row = (int) (simY / CELL_SIZE);
+
+                outerLoop:
+                for (int m = col - 1; m <= col + 1; m++) {
+                    for (int n = row - 1; n <= row + 1; n++) {
+                        if (m >= 0 && m < gridCols && n >= 0 && n < gridRows) {
+                            for (Peg peg : pegGrid[m][n]) {
+                                float pdx = simX - peg.getX();
+                                float pdy = simY - peg.getY();
+                                float dist = (float) Math.sqrt(pdx * pdx + pdy * pdy);
+                                float effectiveBallRadius = ballRadius * 0.15f;
+                                float rSum = effectiveBallRadius + peg.getRadius();
+                                if (dist < rSum) {
+                                    float prevPdx = prevSimX - peg.getX();
+                                    float prevPdy = prevSimY - peg.getY();
+                                    float prevDist = (float) Math.sqrt(prevPdx * prevPdx + prevPdy * prevPdy);
+                                    if (prevDist > rSum && Math.abs(dist - prevDist) > 0.001f) {
+                                        float t = (rSum - prevDist) / (dist - prevDist);
+                                        simX = prevSimX + t * (simX - prevSimX);
+                                        simY = prevSimY + t * (simY - prevSimY);
+                                    }
+                                    hit = true;
+                                    break outerLoop;
+                                }
+                            }
                         }
-                        hit = true;
-                        break;
                     }
                 }
-
                 path.lineTo(simX, simY);
                 if (hit) break;
             }
-            
             canvas.drawPath(path, trajectoryPaint);
         }
     }
@@ -626,9 +650,13 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                if (cannon != null && balls.isEmpty() && (System.currentTimeMillis() - ballDeactivatedTime > 1000) && remainingBalls > 0) {
+                if (cannon != null && (activeBall == null || !activeBall.isMoving()) && (System.currentTimeMillis() - ballDeactivatedTime > 1000) && remainingBalls > 0) {
                     cannon.aim(x, y);
-                    previewBall = cannon.fire(getContext());
+                    if (previewBall == null) {
+                        previewBall = new Ball(getContext(), cannon.getNozzleX(), cannon.getNozzleY(), 15);
+                    } else {
+                        previewBall.reset(cannon.getNozzleX(), cannon.getNozzleY());
+                    }
                     currentShotScore = 0;
                 }
                 break;
@@ -641,9 +669,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             case MotionEvent.ACTION_UP:
                 if (cannon != null && previewBall != null) {
                     cannon.aim(x, y);
-                    previewBall.setPosition(cannon.getNozzleX(), cannon.getNozzleY());
-                    previewBall.setTarget(x, y);
-                    balls.add(previewBall);
+                    activeBall.reset(cannon.getNozzleX(), cannon.getNozzleY());
+                    activeBall.setTarget(x, y);
+                    activeBall.setMoving(true);
                     previewBall = null;
                 }
                 break;

@@ -78,6 +78,24 @@ public class Ball extends BaseShape {
         }
     }
 
+    public void reset(float x, float y) {
+        this.x = x;
+        this.y = y;
+        this.velocityX = 0;
+        this.velocityY = 0;
+        this.isMoving = false;
+        this.isDeactivated = false;
+        this.hitPegs.clear();
+    }
+
+    public void setMoving(boolean moving) {
+        this.isMoving = moving;
+    }
+
+    public boolean isMoving() {
+        return isMoving;
+    }
+
     public boolean reflect(Peg peg) {
         float normalX = x - peg.getX();
         float normalY = y - peg.getY();
@@ -134,6 +152,7 @@ public class Ball extends BaseShape {
             }
 
             if (y - radius > screenHeight) {
+                isMoving = false;
                 deactivate();
             }
         }
