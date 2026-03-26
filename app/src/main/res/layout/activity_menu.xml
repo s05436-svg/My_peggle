@@ -2,63 +2,45 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/peggle_background_new">
+    android:background="@drawable/background_login">
 
-    <!-- Top bar for user info and logout -->
-    <LinearLayout
-        android:id="@+id/topBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="#AA000000"
-        android:padding="10dp"
-        android:gravity="center_vertical">
-
-        <TextView
-            android:id="@+id/welcomeText"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Welcome!"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/btnLogout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Logout"
-            android:textSize="14sp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:padding="10dp"/>
-    </LinearLayout>
-
-    <LinearLayout
+    <TextView
+        android:id="@+id/welcomeText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:orientation="vertical"
-        android:gravity="center"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_margin="20dp"
+        android:text="Welcome!"
+        android:textColor="@android:color/white"
+        android:textSize="22sp"
+        android:textStyle="bold"
         android:background="#80000000"
-        android:padding="30dp">
+        android:padding="10dp"/>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Main Menu"
-            android:textColor="@android:color/white"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="30dp"/>
+    <!-- Start Game Button: Will be animated to center-right -->
+    <Button
+        android:id="@+id/btnStartGame"
+        android:layout_width="220dp"
+        android:layout_height="65dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:layout_marginEnd="40dp"
+        android:text="Start Game"
+        android:textSize="18sp"
+        android:visibility="invisible" />
 
-        <Button
-            android:id="@+id/btnStartGame"
-            android:layout_width="250dp"
-            android:layout_height="60dp"
-            android:text="Start Game"
-            android:textSize="20sp" />
+    <!-- Logout Button: Will be animated to bottom-right -->
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="40dp"
+        android:layout_marginBottom="30dp"
+        android:text="Logout"
+        android:textSize="14sp"
+        android:visibility="invisible" />
 
-    </LinearLayout>
 </RelativeLayout>

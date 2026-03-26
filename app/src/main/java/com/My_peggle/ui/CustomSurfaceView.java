@@ -60,6 +60,10 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private Ball previewBall;
     private float lastTouchX, lastTouchY;
 
+    // For stuck detection
+    private float lastBallX, lastBallY;
+    private int stuckFrames = 0;
+
     public CustomSurfaceView(Context context) {
         super(context);
         getHolder().addCallback(this);
@@ -197,8 +201,16 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             Ball ball = ballIterator.next();
             ball.update(screenWidth, screenHeight);
             
-            // Stuck detection: If velocity is extremely low while ball should be moving
-            if (Math.abs(ball.getVelocityX()) < 0.5f && Math.abs(ball.getVelocityY()) < 1.0f) {
+            float distMoved = (float) Math.sqrt(Math.pow(ball.getX() - lastBallX, 2) + Math.pow(ball.getY() - lastBallY, 2));
+            if (distMoved < 2.0f) {
+                stuckFrames++;
+            } else {
+                stuckFrames = 0;
+            }
+            lastBallX = ball.getX();
+            lastBallY = ball.getY();
+
+            if (stuckFrames > 30) {
                 Peg lowestPeg = null;
                 float maxPegY = -1;
                 
@@ -206,8 +218,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     float dx = ball.getX() - peg.getX();
                     float dy = ball.getY() - peg.getY();
                     float dist = (float) Math.sqrt(dx * dx + dy * dy);
-                    // Use a slightly larger radius for detection to find pegs causing the "jam"
-                    if (dist < (ball.getRadius() + peg.getRadius()) * 1.2f) {
+                    if (dist < (ball.getRadius() + peg.getRadius()) * 1.5f) {
                         if (peg.getY() > maxPegY) {
                             maxPegY = peg.getY();
                             lowestPeg = peg;
@@ -220,6 +231,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     shapes.remove(lowestPeg);
                     lowestPeg.startAnimation();
                     animatingPegs.add(lowestPeg);
+                    stuckFrames = 0;
                 }
             }
 
@@ -227,6 +239,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 remainingBalls--; 
                 totalScore += currentShotScore;
                 currentShotScore = 0;
+                stuckFrames = 0;
 
                 if (!containerBalls.isEmpty()) {
                     Ball topBall = containerBalls.remove(containerBalls.size() - 1);
@@ -288,9 +301,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 float dy = ball.getY() - peg.getY();
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
                 
-                // Visual correction: decrease effective ball radius for collision
-                // This makes the ball appear to touch the actual image before bouncing
-                float effectiveBallRadius = ball.getRadius() * 0.6f; 
+                // GREATLY reduced effective radius to make ball touch the peg image
+                float effectiveBallRadius = ball.getRadius() * 0.15f; 
                 float sumOfRadii = effectiveBallRadius + peg.getRadius();
 
                 if (distance < sumOfRadii) {
@@ -457,8 +469,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     float pdy = simY - peg.getY();
                     float dist = (float) Math.sqrt(pdx * pdx + pdy * pdy);
                     
-                    // Match the visual correction in trajectory too
-                    float effectiveBallRadius = ballRadius * 0.6f;
+                    // Reduced radius in trajectory to match logic
+                    float effectiveBallRadius = ballRadius * 0.15f;
                     float rSum = effectiveBallRadius + peg.getRadius();
                     
                     if (dist < rSum) {
