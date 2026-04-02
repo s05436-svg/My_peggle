@@ -11,6 +11,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class RegistrationManager {
     private static final String TAG = "RegistrationManager";
@@ -23,6 +27,7 @@ public class RegistrationManager {
     private int registrationPhase;
 
     String username;
+    String email;
     String password;
     Activity activity;
     OnResultCallback onResultCallback;
@@ -38,11 +43,13 @@ public class RegistrationManager {
     }
 
     public void startRegistration(String username,
+                                  String email,
                                   String password,
                                   OnResultCallback onResultCallback)
     {
         this.onResultCallback = onResultCallback;
         this.username = username;
+        this.email = email;
         this.password = password;
 
         executeNextPhase();
@@ -108,7 +115,7 @@ public class RegistrationManager {
     private void validateUserInfo() {
         Log.d(TAG, "Starting registration for username: " + username );
 
-        if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)  ) {
+        if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password) || TextUtils.isEmpty(email)) {
             Log.w(TAG, "Validation failed: missing fields");
             phaseFailed("Please fill in all fields");
             return;
@@ -118,10 +125,7 @@ public class RegistrationManager {
     }
 
     private void createUser() {
-        Log.d(TAG, "createUser: Creating user with Firebase Auth");
-
-        // Convert username to email format for Firebase
-        String email = username + "@peggle.com";
+        Log.d(TAG, "createUser: Creating user with Firebase Auth using email: " + email);
 
         auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(activity, new OnCompleteListener<AuthResult>() {
@@ -151,7 +155,25 @@ public class RegistrationManager {
 
 
     private void saveUserToFirestore() {
-        phaseDone();
+        Log.d(TAG, "Saving user to Firestore. UID: " + userId + ", Username: " + username + ", Email: " + email);
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("username", username);
+        userMap.put("email", email);
+        userMap.put("rank", 0);
+        userMap.put("level", 0);
+        
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("users").document(userId)
+                .set(userMap)
+                .addOnSuccessListener(aVoid -> {
+                    Log.i(TAG, "User document created in Firestore for UID: " + userId);
+                    phaseDone();
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to save user data to Firestore", e);
+                    phaseFailed("Failed to save user data: " + e.getMessage());
+                });
     }
 
 }

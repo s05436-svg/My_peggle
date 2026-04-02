@@ -155,7 +155,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             float availableHeight = bottomLimit - startYOffset;
             
             float verticalStep = availableHeight / 10f;
-            containerBallRadius = (verticalStep / 2f) * 1.5f;
+            containerBallRadius = (verticalStep / 2f) * 1.7f;
             float centerX = ballContainerX + containerWidth / 2f;
 
             for (int i = 0; i < 9; i++) {

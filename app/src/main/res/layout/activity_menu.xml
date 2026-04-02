@@ -4,19 +4,44 @@
     android:layout_height="match_parent"
     android:background="@drawable/background_login">
 
-    <TextView
-        android:id="@+id/welcomeText"
+    <LinearLayout
+        android:id="@+id/userStatsLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
         android:layout_margin="20dp"
-        android:text="Welcome!"
-        android:textColor="@android:color/white"
-        android:textSize="22sp"
-        android:textStyle="bold"
+        android:orientation="vertical"
         android:background="#80000000"
-        android:padding="10dp"/>
+        android:padding="10dp">
+
+        <TextView
+            android:id="@+id/welcomeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Welcome!"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/rankText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Rank: 0"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:layout_marginTop="4dp"/>
+
+        <TextView
+            android:id="@+id/levelText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Level: 0"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:layout_marginTop="2dp"/>
+    </LinearLayout>
 
     <!-- Start Game Button: Will be animated to center-right -->
     <Button

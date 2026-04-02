@@ -8,22 +8,35 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class MenuActivity extends AppCompatActivity {
+
+    private TextView welcomeText, rankText, levelText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_menu);
 
+        welcomeText = findViewById(R.id.welcomeText);
+        rankText = findViewById(R.id.rankText);
+        levelText = findViewById(R.id.levelText);
+
         String username = getIntent().getStringExtra("USERNAME");
-        TextView welcomeText = findViewById(R.id.welcomeText);
         if (username != null && !username.isEmpty()) {
             welcomeText.setText("Welcome, " + username + "!");
         }
+
+        // Fetch additional stats from Firestore
+        fetchUserStats();
 
         final Button btnStartGame = findViewById(R.id.btnStartGame);
         final Button btnLogout = findViewById(R.id.btnLogout);
@@ -43,7 +56,6 @@ public class MenuActivity extends AppCompatActivity {
             }
         });
 
-        // Use a GlobalLayoutListener to ensure the view is laid out before starting animations
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
@@ -53,25 +65,55 @@ public class MenuActivity extends AppCompatActivity {
         });
     }
 
+    private void fetchUserStats() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            FirebaseFirestore.getInstance().collection("users").document(uid).get()
+                    .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                            if (task.isSuccessful() && task.getResult() != null && task.getResult().exists()) {
+                                long rank = 0;
+                                long level = 0;
+                                
+                                if (task.getResult().contains("rank")) {
+                                    rank = task.getResult().getLong("rank");
+                                }
+                                if (task.getResult().contains("level")) {
+                                    level = task.getResult().getLong("level");
+                                }
+                                
+                                rankText.setText("Rank: " + rank);
+                                levelText.setText("Level: " + level);
+                                
+                                // In case username wasn't passed or we want the latest
+                                String username = task.getResult().getString("username");
+                                if (username != null) {
+                                    welcomeText.setText("Welcome, " + username + "!");
+                                }
+                            }
+                        }
+                    });
+        }
+    }
+
     private void startMenuAnimations(final View btnStart, final View btnLogout) {
         float screenHeight = getResources().getDisplayMetrics().heightPixels;
 
-        // 1. Setup Start Game Button
-        btnStart.setTranslationY(screenHeight); // Start from off-screen bottom
+        btnStart.setTranslationY(screenHeight);
         btnStart.setVisibility(View.VISIBLE);
         btnStart.animate()
-                .translationY(0) // Move to its original XML position (center-right)
+                .translationY(0)
                 .setDuration(1000)
                 .setStartDelay(0)
                 .start();
 
-        // 2. Setup Logout Button
-        btnLogout.setTranslationY(screenHeight); // Start from off-screen bottom
+        btnLogout.setTranslationY(screenHeight);
         btnLogout.setVisibility(View.VISIBLE);
         btnLogout.animate()
-                .translationY(0) // Move to its original XML position (bottom-right)
+                .translationY(0)
                 .setDuration(1000)
-                .setStartDelay(500) // Delay by half a second
+                .setStartDelay(500)
                 .start();
     }
 
