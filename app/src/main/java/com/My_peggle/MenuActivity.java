@@ -20,6 +20,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 public class MenuActivity extends AppCompatActivity {
 
     private TextView welcomeText, rankText, levelText;
+    private Button btnStartGame;
+    private Button btnLogout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,17 +31,13 @@ public class MenuActivity extends AppCompatActivity {
         welcomeText = findViewById(R.id.welcomeText);
         rankText = findViewById(R.id.rankText);
         levelText = findViewById(R.id.levelText);
+        btnStartGame = findViewById(R.id.btnStartGame);
+        btnLogout = findViewById(R.id.btnLogout);
 
         String username = getIntent().getStringExtra("USERNAME");
         if (username != null && !username.isEmpty()) {
             welcomeText.setText("Welcome, " + username + "!");
         }
-
-        // Fetch additional stats from Firestore
-        fetchUserStats();
-
-        final Button btnStartGame = findViewById(R.id.btnStartGame);
-        final Button btnLogout = findViewById(R.id.btnLogout);
 
         btnStartGame.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -56,13 +54,24 @@ public class MenuActivity extends AppCompatActivity {
             }
         });
 
+        // Initialize buttons as invisible for animation
+        btnStartGame.setVisibility(View.INVISIBLE);
+        btnLogout.setVisibility(View.INVISIBLE);
+
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 getWindow().getDecorView().getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                startMenuAnimations(btnStartGame, btnLogout);
+                startMenuAnimations();
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh stats whenever we return to this screen
+        fetchUserStats();
     }
 
     private void fetchUserStats() {
@@ -86,7 +95,6 @@ public class MenuActivity extends AppCompatActivity {
                                 rankText.setText("Rank: " + rank);
                                 levelText.setText("Level: " + level);
                                 
-                                // In case username wasn't passed or we want the latest
                                 String username = task.getResult().getString("username");
                                 if (username != null) {
                                     welcomeText.setText("Welcome, " + username + "!");
@@ -97,12 +105,12 @@ public class MenuActivity extends AppCompatActivity {
         }
     }
 
-    private void startMenuAnimations(final View btnStart, final View btnLogout) {
+    private void startMenuAnimations() {
         float screenHeight = getResources().getDisplayMetrics().heightPixels;
 
-        btnStart.setTranslationY(screenHeight);
-        btnStart.setVisibility(View.VISIBLE);
-        btnStart.animate()
+        btnStartGame.setTranslationY(screenHeight);
+        btnStartGame.setVisibility(View.VISIBLE);
+        btnStartGame.animate()
                 .translationY(0)
                 .setDuration(1000)
                 .setStartDelay(0)

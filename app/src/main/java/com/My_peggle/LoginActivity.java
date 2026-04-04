@@ -30,18 +30,23 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
-
+        
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // Auto-login check
+        // 1. Check for auto-login BEFORE setting the content view
         if (auth.getCurrentUser() != null) {
-            Log.i(TAG, "User already signed in, fetching data...");
+            Log.i(TAG, "User already signed in, bypassing login screen...");
+            // Optionally set a loading layout here if you have one
+            // For now, we stay on a blank screen while fetching data
             fetchUserDataAndNavigate(auth.getCurrentUser().getUid());
+            return;
         }
 
-        emailEditText = findViewById(R.id.etEmail); // Fixed: ID is etEmail in XML
+        // 2. If not logged in, show the login UI
+        setContentView(R.layout.activity_login);
+
+        emailEditText = findViewById(R.id.etEmail);
         passwordEditText = findViewById(R.id.etPassword);
         Button btnLogin = findViewById(R.id.btnLogin);
         TextView tvRegister = findViewById(R.id.tvRegister);
@@ -63,10 +68,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void performLogin() {
-        if (emailEditText == null || passwordEditText == null) {
-            Log.e(TAG, "EditText fields are null. Check layout XML IDs.");
-            return;
-        }
+        if (emailEditText == null || passwordEditText == null) return;
 
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
@@ -76,7 +78,6 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Add default domain if not an email for convenience
         if (!email.contains("@")) {
             email = email + "@peggle.com";
         }
@@ -86,10 +87,8 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            Log.i(TAG, "signInWithEmail:success");
                             fetchUserDataAndNavigate(auth.getCurrentUser().getUid());
                         } else {
-                            Log.w(TAG, "signInWithEmail:failure", task.getException());
                             String msg = "Authentication failed.";
                             if (task.getException() != null) msg = task.getException().getMessage();
                             Toast.makeText(LoginActivity.this, msg, Toast.LENGTH_LONG).show();
@@ -110,6 +109,7 @@ public class LoginActivity extends AppCompatActivity {
                         
                         Intent intent = new Intent(LoginActivity.this, MenuActivity.class);
                         intent.putExtra("USERNAME", username);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
                         finish();
                     }

@@ -9,6 +9,7 @@ import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -82,10 +83,34 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private List<Peg>[][] pegGrid;
     private int gridCols, gridRows;
 
+    // Game Over Listener
+    public interface OnGameOverListener {
+        void onGameOver();
+    }
+    private OnGameOverListener gameOverListener;
+    private boolean isGameOver = false;
+
     public CustomSurfaceView(Context context) {
         super(context);
+        init();
+    }
+
+    public CustomSurfaceView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+
+    private void init() {
         getHolder().addCallback(this);
         initPaints();
+    }
+    
+    public void setGameOverListener(OnGameOverListener listener) {
+        this.gameOverListener = listener;
+    }
+
+    public int getTotalScore() {
+        return totalScore;
     }
 
     private void initPaints() {
@@ -158,7 +183,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             containerBallRadius = (verticalStep / 2f) * 1.7f;
             float centerX = ballContainerX + containerWidth / 2f;
 
-            for (int i = 0; i < 9; i++) {
+            for (int i = 0; i < remainingBalls-1; i++) {
                 float ballY = ballContainerY + bottomLimit - (i * verticalStep) - (verticalStep / 2f);
                 containerBalls.add(new Ball(getContext(), centerX, ballY, containerBallRadius));
             }
@@ -254,6 +279,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     public void update() {
+        if (isGameOver) return;
+
         float gameAreaWidth = screenHeight;
         float gameLeft = (screenWidth - gameAreaWidth) / 2;
         float gameRight = gameLeft + gameAreaWidth;
@@ -310,6 +337,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 ballDeactivatedTime = System.currentTimeMillis();
                 pegClearStartTime = ballDeactivatedTime + 300;
                 pegClearIndex = 0;
+                
+                // Check for Game Over after ball is deactivated
+                if (remainingBalls == 0 && enteringBalls.isEmpty() && animatingBalls.isEmpty()) {
+                    isGameOver = true;
+                    if (gameOverListener != null) {
+                        gameOverListener.onGameOver();
+                    }
+                }
             }
             
             checkCollisions();
@@ -643,6 +678,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (isGameOver) return true;
+
         float x = event.getX();
         float y = event.getY();
         lastTouchX = x;
