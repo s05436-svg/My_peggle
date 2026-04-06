@@ -183,7 +183,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             containerBallRadius = (verticalStep / 2f) * 1.7f;
             float centerX = ballContainerX + containerWidth / 2f;
 
-            for (int i = 0; i < remainingBalls-1; i++) {
+            for (int i = 0; i < remainingBalls - 1; i++) {
                 float ballY = ballContainerY + bottomLimit - (i * verticalStep) - (verticalStep / 2f);
                 containerBalls.add(new Ball(getContext(), centerX, ballY, containerBallRadius));
             }

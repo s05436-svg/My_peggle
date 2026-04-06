@@ -2,26 +2,42 @@ package com.My_peggle;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MenuActivity extends AppCompatActivity {
 
+    private static final String TAG = "MenuActivity";
     private TextView welcomeText, rankText, levelText;
     private Button btnStartGame;
     private Button btnLogout;
+    
+    private RecyclerView rvLeaderboard;
+    private LeaderboardAdapter leaderboardAdapter;
+    private List<LeaderboardAdapter.UserScore> leaderboardList;
+    private ProgressBar pbLeaderboard;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +49,14 @@ public class MenuActivity extends AppCompatActivity {
         levelText = findViewById(R.id.levelText);
         btnStartGame = findViewById(R.id.btnStartGame);
         btnLogout = findViewById(R.id.btnLogout);
+        
+        rvLeaderboard = findViewById(R.id.rvLeaderboard);
+        pbLeaderboard = findViewById(R.id.pbLeaderboard);
+        
+        leaderboardList = new ArrayList<>();
+        leaderboardAdapter = new LeaderboardAdapter(leaderboardList);
+        rvLeaderboard.setLayoutManager(new LinearLayoutManager(this));
+        rvLeaderboard.setAdapter(leaderboardAdapter);
 
         String username = getIntent().getStringExtra("USERNAME");
         if (username != null && !username.isEmpty()) {
@@ -65,13 +89,16 @@ public class MenuActivity extends AppCompatActivity {
                 startMenuAnimations();
             }
         });
+        
+        fetchLeaderboard();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh stats whenever we return to this screen
+        // Refresh stats and leaderboard whenever we return to this screen
         fetchUserStats();
+        fetchLeaderboard();
     }
 
     private void fetchUserStats() {
@@ -92,7 +119,7 @@ public class MenuActivity extends AppCompatActivity {
                                     level = task.getResult().getLong("level");
                                 }
                                 
-                                rankText.setText("Rank: " + rank);
+                                rankText.setText("Total Points: " + rank);
                                 levelText.setText("Level: " + level);
                                 
                                 String username = task.getResult().getString("username");
@@ -103,6 +130,41 @@ public class MenuActivity extends AppCompatActivity {
                         }
                     });
         }
+    }
+
+    private void fetchLeaderboard() {
+        pbLeaderboard.setVisibility(View.VISIBLE);
+        FirebaseFirestore.getInstance().collection("users")
+                .orderBy("rank", Query.Direction.DESCENDING)
+                .limit(50) // Limit to top 50 players
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        pbLeaderboard.setVisibility(View.GONE);
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            leaderboardList.clear();
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                String uid = document.getId();
+                                String username = document.getString("username");
+                                if (username == null) username = "Unknown";
+                                long rank = 0;
+                                if (document.contains("rank")) {
+                                    rank = document.getLong("rank");
+                                }
+                                long level = 0;
+                                if (document.contains("level")) {
+                                    level = document.getLong("level");
+                                }
+                                leaderboardList.add(new LeaderboardAdapter.UserScore(uid, username, rank, level));
+                            }
+                            leaderboardAdapter.notifyDataSetChanged();
+                        } else {
+                            Log.e(TAG, "Error fetching leaderboard", task.getException());
+                            Toast.makeText(MenuActivity.this, "Failed to load leaderboard", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 
     private void startMenuAnimations() {

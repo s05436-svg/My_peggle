@@ -4,6 +4,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/background_login">
 
+    <!-- User Stats (Top Left) -->
     <LinearLayout
         android:id="@+id/userStatsLayout"
         android:layout_width="wrap_content"
@@ -28,7 +29,7 @@
             android:id="@+id/rankText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Rank: 0"
+            android:text="Total Points: 0"
             android:textColor="@android:color/white"
             android:textSize="16sp"
             android:layout_marginTop="4dp"/>
@@ -43,26 +44,104 @@
             android:layout_marginTop="2dp"/>
     </LinearLayout>
 
-    <!-- Start Game Button: Will be animated to center-right -->
+    <!-- Leaderboard Container (Lowered and Shorter) -->
+    <LinearLayout
+        android:id="@+id/leaderboardContainer"
+        android:layout_width="290dp"
+        android:layout_height="280dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="15dp"
+        android:background="#80000000"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LEADERBOARD"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_gravity="center"
+            android:layout_marginBottom="10dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="5dp"
+            android:background="#40FFFFFF">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="#"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:gravity="center"/>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="Player"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"/>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.5"
+                android:text="Lvl"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:gravity="center"/>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Points"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:gravity="end"/>
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvLeaderboard"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical"/>
+
+            <ProgressBar
+                android:id="@+id/pbLeaderboard"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"/>
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- Start Game Button -->
     <Button
         android:id="@+id/btnStartGame"
         android:layout_width="220dp"
         android:layout_height="65dp"
-        android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true"
-        android:layout_marginEnd="40dp"
+        android:layout_centerInParent="true"
         android:text="Start Game"
         android:textSize="18sp"
         android:visibility="invisible" />
 
-    <!-- Logout Button: Will be animated to bottom-right -->
+    <!-- Logout Button -->
     <Button
         android:id="@+id/btnLogout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
+        android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginEnd="40dp"
         android:layout_marginBottom="30dp"
         android:text="Logout"
         android:textSize="14sp"
