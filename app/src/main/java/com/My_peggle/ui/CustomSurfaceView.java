@@ -24,6 +24,7 @@ import com.My_peggle.shapes.Peg;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
@@ -82,6 +83,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private static final int CELL_SIZE = 150; 
     private List<Peg>[][] pegGrid;
     private int gridCols, gridRows;
+
+    private List<Map<String, Object>> pendingLevelData;
 
     // Game Over Listener
     public interface OnGameOverListener {
@@ -210,11 +213,62 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         // Create the persistent active ball off-screen initially
         activeBall = new Ball(getContext(), -1000, -1000, 15);
 
-        createButterflyPattern(viewWidth, viewHeight);
+        if (pendingLevelData != null) {
+            loadLevelFromCoordinates(pendingLevelData);
+            pendingLevelData = null;
+        }
+        
+        updatePegGrid();
+    }
+
+    public void setLevelData(List<Map<String, Object>> coordinates) {
+        if (!shapesInitialized) {
+            this.pendingLevelData = coordinates;
+        } else {
+            loadLevelFromCoordinates(coordinates);
+        }
+    }
+
+    private void loadLevelFromCoordinates(List<Map<String, Object>> coordinates) {
+        pegs.clear();
+        // Keep only non-peg shapes (cannon, bottomHole)
+        List<BaseShape> nonPegShapes = new ArrayList<>();
+        for (BaseShape shape : shapes) {
+            if (!(shape instanceof Peg)) {
+                nonPegShapes.add(shape);
+            }
+        }
+        shapes.clear();
+        shapes.addAll(nonPegShapes);
+
+        float pegRadius = 25f;
+        Random random = new Random();
+
+        for (Map<String, Object> coord : coordinates) {
+            Object xObj = coord.get("x");
+            Object yObj = coord.get("y");
+            if (xObj != null && yObj != null) {
+                float x = ((Number) xObj).floatValue();
+                float y = ((Number) yObj).floatValue();
+
+                // Determine type (random or from DB if exists)
+                Peg.PegType type = (random.nextFloat() > 0.3) ? Peg.PegType.BLUE : Peg.PegType.ORANGE;
+                if (coord.containsKey("type")) {
+                    String typeStr = (String) coord.get("type");
+                    if ("ORANGE".equals(typeStr)) type = Peg.PegType.ORANGE;
+                    else if ("BLUE".equals(typeStr)) type = Peg.PegType.BLUE;
+                }
+
+                Peg peg = new Peg(getContext(), x, y, pegRadius, type);
+                pegs.add(peg);
+                shapes.add(peg);
+            }
+        }
         updatePegGrid();
     }
 
     private void updatePegGrid() {
+        if (pegGrid == null) return;
         for (int i = 0; i < gridCols; i++) {
             for (int j = 0; j < gridRows; j++) {
                 pegGrid[i][j].clear();
@@ -225,55 +279,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             int row = (int) (peg.getY() / CELL_SIZE);
             if (col >= 0 && col < gridCols && row >= 0 && row < gridRows) {
                 pegGrid[col][row].add(peg);
-            }
-        }
-    }
-
-    private void createButterflyPattern(int viewWidth, int viewHeight) {
-        float centerX = viewWidth / 2f;
-        float centerY = viewHeight / 2f + 80f;
-        float scale = 140f; 
-        float pegRadius = 25f;
-        float minSpacing = pegRadius * 2.5f; 
-        Random random = new Random();
-
-        float lastX = -10000, lastY = -10000;
-
-        for (float t = 0; t < 2 * Math.PI; t += 0.01f) {
-            double multiplier = Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.pow(Math.sin(t / 12), 5);
-            float x = (float) (Math.sin(t) * multiplier) * scale;
-            float y = (float) (-Math.cos(t) * multiplier) * scale;
-
-            float dist = (float) Math.sqrt(Math.pow(x - lastX, 2) + Math.pow(y - lastY, 2));
-
-            if (dist >= minSpacing) {
-                float finalX = centerX + x;
-                float finalY = centerY + y;
-
-                Peg.PegType type = (random.nextFloat() > 0.3) ? Peg.PegType.BLUE : Peg.PegType.ORANGE;
-                Peg peg = new Peg(getContext(), finalX, finalY, pegRadius, type);
-                pegs.add(peg);
-                shapes.add(peg);
-
-                lastX = x;
-                lastY = y;
-            }
-        }
-
-        float bodyHeight = scale * 1.2f;
-        for (float yOffset = -bodyHeight / 2; yOffset <= bodyHeight / 2; yOffset += minSpacing) {
-            boolean overlap = false;
-            for (Peg p : pegs) {
-                float d = (float) Math.sqrt(Math.pow(centerX - p.getX(), 2) + Math.pow(centerY + yOffset - p.getY(), 2));
-                if (d < minSpacing * 0.8f) {
-                    overlap = true;
-                    break;
-                }
-            }
-            if (!overlap) {
-                Peg peg = new Peg(getContext(), centerX, centerY + yOffset, pegRadius, Peg.PegType.ORANGE);
-                pegs.add(peg);
-                shapes.add(peg);
             }
         }
     }
@@ -429,6 +434,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private Peg findPegNearby(float x, float y, float radius) {
+        if (pegGrid == null) return null;
         int col = (int) (x / CELL_SIZE);
         int row = (int) (y / CELL_SIZE);
         Peg lowestPeg = null;
@@ -465,7 +471,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private void checkCollisions() {
-        if (activeBall == null || !activeBall.isMoving()) return;
+        if (activeBall == null || !activeBall.isMoving() || pegGrid == null) return;
         
         int col = (int) (activeBall.getX() / CELL_SIZE);
         int row = (int) (activeBall.getY() / CELL_SIZE);
@@ -601,7 +607,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private void drawTrajectory(Canvas canvas) {
-        if (previewBall == null || cannon == null) return;
+        if (previewBall == null || cannon == null || pegGrid == null) return;
         float startX = previewBall.getX();
         float startY = previewBall.getY();
         float ballRadius = previewBall.getRadius();

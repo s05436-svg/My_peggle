@@ -160,7 +160,7 @@ public class RegistrationManager {
         userMap.put("username", username);
         userMap.put("email", email);
         userMap.put("rank", 0);
-        userMap.put("level", 0);
+        userMap.put("level", 1); // Starting level changed to 1
         
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
