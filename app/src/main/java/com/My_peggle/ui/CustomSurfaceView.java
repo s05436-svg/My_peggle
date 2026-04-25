@@ -88,7 +88,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
     // Game Over Listener
     public interface OnGameOverListener {
-        void onGameOver();
+        void onGameOver(boolean isWin);
     }
     private OnGameOverListener gameOverListener;
     private boolean isGameOver = false;
@@ -345,10 +345,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 
                 // Check for Game Over after ball is deactivated
                 if (remainingBalls == 0 && enteringBalls.isEmpty() && animatingBalls.isEmpty()) {
-                    isGameOver = true;
-                    if (gameOverListener != null) {
-                        gameOverListener.onGameOver();
-                    }
+                    checkGameOver(false);
                 }
             }
             
@@ -418,7 +415,37 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     pegClearStartTime = System.currentTimeMillis() + delay;
                 } else {
                     pegsToClear.clear();
+                    // After clearing pegs from the last shot, check if all pegs are gone
+                    if (pegs.isEmpty()) {
+                        checkGameOver(true);
+                    }
                 }
+            }
+        }
+    }
+
+    private void checkGameOver(boolean forcedWin) {
+        if (isGameOver) return;
+        
+        boolean hasOrangePegs = false;
+        for (Peg p : pegs) {
+            if (p.getType() == Peg.PegType.ORANGE) {
+                hasOrangePegs = true;
+                break;
+            }
+        }
+
+        // Win condition: No orange pegs left (or no pegs at all if forcedWin is true)
+        if (!hasOrangePegs || forcedWin || (pegs.isEmpty() && animatingPegs.isEmpty())) {
+            isGameOver = true;
+            if (gameOverListener != null) {
+                gameOverListener.onGameOver(true);
+            }
+        } else if (remainingBalls == 0 && enteringBalls.isEmpty() && animatingBalls.isEmpty() && !activeBall.isMoving()) {
+            // Loss condition: No balls left and orange pegs still exist
+            isGameOver = true;
+            if (gameOverListener != null) {
+                gameOverListener.onGameOver(false);
             }
         }
     }

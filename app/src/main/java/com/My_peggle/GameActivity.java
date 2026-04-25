@@ -53,13 +53,13 @@ public class GameActivity extends AppCompatActivity {
 
         gameView.setGameOverListener(new CustomSurfaceView.OnGameOverListener() {
             @Override
-            public void onGameOver() {
+            public void onGameOver(boolean isWin) {
                 final int finalScore = gameView.getTotalScore();
-                saveScoreToFirestore(finalScore);
+                saveScoreToFirestore(finalScore, isWin);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        showGameOverUI(finalScore);
+                        showGameOverUI(finalScore, isWin);
                     }
                 });
             }
@@ -92,7 +92,6 @@ public class GameActivity extends AppCompatActivity {
                             @Override
                             public void onFailure(Exception e) {
                                 Log.e(TAG, "Failed to load level coordinates", e);
-                                // מציג את השגיאה המדויקת כדי שנוכל לאבחן
                                 Toast.makeText(GameActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
                             }
                         });
@@ -112,7 +111,6 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void fetchCoordinatesDataForLevel(int levelNumber, OnLevelDataLoadedListener listener) {
-        // וודא שהשם כאן תואם לשם המסמך ב-Firebase (למשל level_0)
         String documentId = "level_" + levelNumber;
         Log.d(TAG, "Fetching document: levels/" + documentId);
 
@@ -139,14 +137,21 @@ public class GameActivity extends AppCompatActivity {
                 });
     }
 
-    private void saveScoreToFirestore(int score) {
+    private void saveScoreToFirestore(int score, boolean isWin) {
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid == null) return;
-        db.collection("users").document(uid).update("rank", FieldValue.increment(score));
+        
+        DocumentReference userRef = db.collection("users").document(uid);
+        userRef.update("rank", FieldValue.increment(score));
+        
+        if (isWin) {
+            userRef.update("level", FieldValue.increment(1));
+        }
     }
 
-    private void showGameOverUI(int score) {
-        tvFinalScore.setText("Final Score: " + score);
+    private void showGameOverUI(int score, boolean isWin) {
+        String status = isWin ? "YOU WIN!" : "GAME OVER";
+        tvFinalScore.setText(status + "\nFinal Score: " + score);
         gameOverLayout.setVisibility(View.VISIBLE);
         gameOverLayout.bringToFront();
         gameOverLayout.setAlpha(0f);

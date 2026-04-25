@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "124972283567",
+    "project_id": "mypeggle",
+    "storage_bucket": "mypeggle.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:124972283567:android:d642e989d3228c4445c65a",
+        "android_client_info": {
+          "package_name": "com.My_peggle"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDD_Gy2wyNi50c0fuvmHLZjkkNsuHkLhIg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
