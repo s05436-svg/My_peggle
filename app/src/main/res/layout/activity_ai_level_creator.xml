@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@drawable/background_login">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:text="Create Level with AI"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnMyMaps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:text="My Maps"
+            android:textSize="12sp" />
+    </RelativeLayout>
+
+    <EditText
+        android:id="@+id/etAiPrompt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Describe how you want the level to look..."
+        android:textColor="@android:color/white"
+        android:textColorHint="#CCCCCC"
+        android:background="#80000000"
+        android:padding="15dp"
+        android:minLines="3"
+        android:gravity="top"/>
+
+    <Button
+        android:id="@+id/btnGenerateLevel"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="20dp"
+        android:text="Generate and Save Level"
+        android:textSize="18sp"/>
+
+    <ProgressBar
+        android:id="@+id/pbGenerating"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="20dp"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="10dp"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"/>
+
+</LinearLayout>

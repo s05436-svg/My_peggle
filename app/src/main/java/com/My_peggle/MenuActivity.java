@@ -32,6 +32,7 @@ public class MenuActivity extends AppCompatActivity {
     private static final String TAG = "MenuActivity";
     private TextView welcomeText, rankText, levelText;
     private Button btnStartGame;
+    private Button btnAiCreateLevel;
     private Button btnLogout;
     
     private RecyclerView rvLeaderboard;
@@ -48,6 +49,7 @@ public class MenuActivity extends AppCompatActivity {
         rankText = findViewById(R.id.rankText);
         levelText = findViewById(R.id.levelText);
         btnStartGame = findViewById(R.id.btnStartGame);
+        btnAiCreateLevel = findViewById(R.id.btnAiCreateLevel);
         btnLogout = findViewById(R.id.btnLogout);
         
         rvLeaderboard = findViewById(R.id.rvLeaderboard);
@@ -71,6 +73,14 @@ public class MenuActivity extends AppCompatActivity {
             }
         });
 
+        btnAiCreateLevel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MenuActivity.this, AiLevelCreatorActivity.class);
+                startActivity(intent);
+            }
+        });
+
         btnLogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -80,6 +90,7 @@ public class MenuActivity extends AppCompatActivity {
 
         // Initialize buttons as invisible for animation
         btnStartGame.setVisibility(View.INVISIBLE);
+        btnAiCreateLevel.setVisibility(View.INVISIBLE);
         btnLogout.setVisibility(View.INVISIBLE);
 
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -176,6 +187,14 @@ public class MenuActivity extends AppCompatActivity {
                 .translationY(0)
                 .setDuration(1000)
                 .setStartDelay(0)
+                .start();
+
+        btnAiCreateLevel.setTranslationY(screenHeight);
+        btnAiCreateLevel.setVisibility(View.VISIBLE);
+        btnAiCreateLevel.animate()
+                .translationY(0)
+                .setDuration(1000)
+                .setStartDelay(250)
                 .start();
 
         btnLogout.setTranslationY(screenHeight);

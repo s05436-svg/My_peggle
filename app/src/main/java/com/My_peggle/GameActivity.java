@@ -65,7 +65,13 @@ public class GameActivity extends AppCompatActivity {
             }
         });
 
-        loadUserLevelAndInitGame();
+        // Check if a custom level was passed
+        List<Map<String, Object>> customCoordinates = (List<Map<String, Object>>) getIntent().getSerializableExtra("CUSTOM_LEVEL");
+        if (customCoordinates != null) {
+            gameView.setLevelData(customCoordinates);
+        } else {
+            loadUserLevelAndInitGame();
+        }
     }
 
     private void loadUserLevelAndInitGame() {

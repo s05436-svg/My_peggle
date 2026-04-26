@@ -35,6 +35,14 @@
             android:name=".GameActivity"
             android:exported="false"
             android:screenOrientation="sensorLandscape" />
+        <activity
+            android:name=".AiLevelCreatorActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape" />
+        <activity
+            android:name=".MyMapsActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape" />
     </application>
 
 </manifest>

@@ -135,6 +135,18 @@
         android:textSize="18sp"
         android:visibility="invisible" />
 
+    <!-- AI Level Creation Button -->
+    <Button
+        android:id="@+id/btnAiCreateLevel"
+        android:layout_width="220dp"
+        android:layout_height="65dp"
+        android:layout_below="@id/btnStartGame"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:text="Create Level with AI"
+        android:textSize="18sp"
+        android:visibility="invisible" />
+
     <!-- Logout Button -->
     <Button
         android:id="@+id/btnLogout"

@@ -8,8 +8,9 @@ material = "1.10.0"
 activity = "1.8.0"
 constraintlayout = "2.1.4"
 googleGmsGoogleServices = "4.4.4"
-firebaseAuth = "24.0.1"
-firebaseFirestore = "26.1.2"
+firebase-bom = "34.4.0"
+guava = "21.0.1-android"
+reactivestreams = "1.0.4"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -19,8 +20,16 @@ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "a
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
-firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
-firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-auth = { module = "com.google.firebase:firebase-auth" }
+firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+firebase-ai = { module = "com.google.firebase:firebase-ai" }
+
+
+# ספריות נוספות עם גרסה ישירה
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+reactive-streams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactivestreams" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
