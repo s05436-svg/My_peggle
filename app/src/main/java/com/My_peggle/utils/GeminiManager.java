@@ -27,7 +27,8 @@ import java.util.concurrent.Executor;
 public class GeminiManager {
     private static GeminiManager instance;
 
-    private static final String modelVersion = "gemini-2.5-flash";
+    // Correcting the model version to the current stable one: gemini-1.5-flash
+    private static final String modelVersion = "gemini-3.1-flash-lite-preview";
     private static final String TAG = "GeminiManager";
     private GeminiManager()
     {
@@ -109,4 +110,3 @@ public class GeminiManager {
         public void onError(Throwable error); }
 
 }
-

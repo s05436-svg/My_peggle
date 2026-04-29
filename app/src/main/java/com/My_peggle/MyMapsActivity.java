@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,6 +25,7 @@ public class MyMapsActivity extends AppCompatActivity {
 
     private ListView lvMyMaps;
     private TextView tvNoMaps;
+    private Button btnBackToAi;
     private List<Map<String, Object>> levelsList;
     private List<String> levelNames;
 
@@ -34,6 +36,7 @@ public class MyMapsActivity extends AppCompatActivity {
 
         lvMyMaps = findViewById(R.id.lvMyMaps);
         tvNoMaps = findViewById(R.id.tvNoMaps);
+        btnBackToAi = findViewById(R.id.btnBackToAi);
 
         fetchUserLevels();
 
@@ -44,8 +47,16 @@ public class MyMapsActivity extends AppCompatActivity {
                 List<Map<String, Object>> coordinates = (List<Map<String, Object>>) selectedLevel.get("coordinates");
                 
                 Intent intent = new Intent(MyMapsActivity.this, GameActivity.class);
-                intent.putExtra("CUSTOM_LEVEL", (Serializable) coordinates);
+                intent.putExtra("CUSTOM_LEVEL", position);
                 startActivity(intent);
+            }
+        });
+
+        btnBackToAi.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MyMapsActivity.this, AiLevelCreatorActivity.class));
+                finish();
             }
         });
     }

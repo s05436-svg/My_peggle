@@ -3,6 +3,7 @@ package com.My_peggle;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -18,6 +19,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FieldValue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -66,12 +68,43 @@ public class GameActivity extends AppCompatActivity {
         });
 
         // Check if a custom level was passed
-        List<Map<String, Object>> customCoordinates = (List<Map<String, Object>>) getIntent().getSerializableExtra("CUSTOM_LEVEL");
-        if (customCoordinates != null) {
-            gameView.setLevelData(customCoordinates);
-        } else {
+        int customLevel = getIntent().getIntExtra("CUSTOM_LEVEL", -1);
+
+        if(customLevel != -1)
+        {
+            String uid = FirebaseAuth.getInstance().getUid();
+            if (uid == null) return;
+
+            FirebaseFirestore.getInstance().collection("users").document(uid).get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists() && documentSnapshot.contains("aiGeneratedLevels")) {
+                            List<Map<String, Object>> levelsList = (List<Map<String, Object>>) documentSnapshot.get("aiGeneratedLevels");
+                            if (levelsList != null && !levelsList.isEmpty()) {
+                                Map<String, Object> selectedLevel = levelsList.get(customLevel);
+                                List<Map<String, Object>> customCoordinates = (List<Map<String, Object>>) selectedLevel.get("coordinates");
+
+                                if (customCoordinates != null) {
+                                    gameView.setLevelData(customCoordinates);
+                                } else {
+                                    loadUserLevelAndInitGame();
+                                }
+                            } else {
+
+                            }
+                        } else {
+
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(this, "Failed to load maps", Toast.LENGTH_SHORT).show();
+                    });
+        }
+        else
+        {
             loadUserLevelAndInitGame();
         }
+
+
     }
 
     private void loadUserLevelAndInitGame() {

@@ -56,6 +56,7 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(AiLevelCreatorActivity.this, MyMapsActivity.class));
+                finish();
             }
         });
     }
@@ -84,16 +85,19 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
         // but it's better to provide the exact absolute boundaries.
         // --------------------------------------------------
 
-        String systemPrompt = "You are a level designer for a Peggle-like game. " +
-                "The game is in landscape mode. The 'playing field' is a square in the center of the screen. " +
-                "Assume the total screen width is 2200 and height is 1000. " +
-                "The square playing field is between X=650 and X=1550, and Y=0 and Y=1000. " +
-                "IMPORTANT CONSTRAINTS FOR COORDINATES: " +
-                "- X must be between 700 and 1500 (to stay inside the side walls). " +
-                "- Y must be between 250 and 850 (to stay below the cannon and above the hole). " +
-                "- Pegs must be at least 60 units apart. " +
-                "Return the response ONLY as a JSON array of objects, where each object has 'x' (double) and 'y' (double) fields. " +
-                "Example format: [{\"x\": 800.0, \"y\": 300.0}, {\"x\": 1400.0, \"y\": 550.0}] " +
+        String systemPrompt = "You are a specialized 2D technical artist for a Peggle-like game. " +
+                "The screen is 2200x1000. Playable area: X=[500, 1700], Y=[150, 1000]. " +
+                "MAP CENTER: (1300, 500). All designs MUST be centered around this point. " +
+                "TECHNICAL CONSTRAINTS: " +
+                "- Peg Radius: 25. " +
+                "- Min Distance between centers: 60 (avoid overlap). " +
+                "DESIGN RULES TO PREVENT CLUMPING: " +
+                "1. Outline Priority: Use ~70% of points to draw a clean, continuous 2D simple outline. " +
+                "2. Skeletal Drawing: Treat pegs as points on a line. Connect them mentally to form curves. " +
+                "3. NO MESH/GRID: Do not fill the interior with a dense grid. Add the minimal required sparse internal features (e.g., eyes, stripes, or structure). " +
+                "OUTPUT: " +
+                "Return ONLY a JSON array of coordinates: [{\"x\": x, \"y\": y}, ...]. " +
+                "Use 20 to 80 pegs for detail but keep the pegs with a minimal distance. " +
                 "User request: " + userPrompt;
 
         setLoading(true);

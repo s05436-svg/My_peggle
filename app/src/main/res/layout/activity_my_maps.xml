@@ -33,4 +33,13 @@
         android:layout_gravity="center"
         android:visibility="gone"/>
 
+    <Button
+        android:id="@+id/btnBackToAi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Back to AI Creator"
+        android:layout_marginTop="10dp"
+        android:backgroundTint="#FF9800"
+        android:textColor="@android:color/white"/>
+
 </LinearLayout>
