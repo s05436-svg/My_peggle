@@ -93,6 +93,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
     private OnGameOverListener gameOverListener;
     private boolean isGameOver = false;
+    private boolean isBonusSequence = false;
 
     public CustomSurfaceView(Context context) {
         super(context);
@@ -241,6 +242,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         totalScore = 0;
         currentShotScore = 0;
         isGameOver = false;
+        isBonusSequence = false;
         
         // Keep only non-peg shapes (cannon, bottomHole)
         List<BaseShape> nonPegShapes = new ArrayList<>();
@@ -317,6 +319,15 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     public void update() {
         if (isGameOver) return;
 
+        // If in bonus sequence, keep loading balls until none left
+        if (isBonusSequence) {
+            if (remainingBalls > 0 && animatingBalls.isEmpty()) {
+                triggerLoadingAnimation();
+            } else if (remainingBalls == 0 && animatingBalls.isEmpty()) {
+                checkGameOver(true);
+            }
+        }
+
         float gameAreaWidth = screenHeight;
         float gameLeft = (screenWidth - gameAreaWidth) / 2;
         float gameRight = gameLeft + gameAreaWidth;
@@ -374,9 +385,11 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 pegClearStartTime = ballDeactivatedTime + 300;
                 pegClearIndex = 0;
                 
-                // Check for Game Over after ball is deactivated
-                if (remainingBalls == 0 && enteringBalls.isEmpty() && animatingBalls.isEmpty()) {
-                    checkGameOver(false);
+                // Check for Game Over after ball is deactivated only if no pegs to clear
+                if (pegsToClear.isEmpty()) {
+                    if (remainingBalls == 0 && enteringBalls.isEmpty() && animatingBalls.isEmpty()) {
+                        checkGameOver(false);
+                    }
                 }
             }
             
@@ -446,9 +459,26 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                     pegClearStartTime = System.currentTimeMillis() + delay;
                 } else {
                     pegsToClear.clear();
-                    // After clearing pegs from the last shot, check if all pegs are gone
-                    if (pegs.isEmpty()) {
-                        checkGameOver(true);
+                    // After clearing pegs from the last shot, check if all orange pegs are gone
+                    boolean hasOrange = false;
+                    for (Peg p : pegs) {
+                        if (p.getType() == Peg.PegType.ORANGE) {
+                            hasOrange = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!hasOrange) {
+                        if (remainingBalls > 0) {
+                            if (!isBonusSequence) {
+                                isBonusSequence = true;
+                                totalScore += remainingBalls * 100;
+                            }
+                        } else {
+                            checkGameOver(true);
+                        }
+                    } else if (remainingBalls == 0 && enteringBalls.isEmpty() && animatingBalls.isEmpty()) {
+                        checkGameOver(false);
                     }
                 }
             }
@@ -541,7 +571,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                         float dx = activeBall.getX() - peg.getX();
                         float dy = activeBall.getY() - peg.getY();
                         float distance = (float) Math.sqrt(dx * dx + dy * dy);
-                        float effectiveBallRadius = activeBall.getRadius() * 0.15f; 
+                        float effectiveBallRadius = activeBall.getRadius() * 0.85f; 
                         float sumOfRadii = effectiveBallRadius + peg.getRadius();
                         if (distance < sumOfRadii) {
                             float overlap = sumOfRadii - distance;
@@ -708,7 +738,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                                 float pdx = simX - peg.getX();
                                 float pdy = simY - peg.getY();
                                 float dist = (float) Math.sqrt(pdx * pdx + pdy * pdy);
-                                float effectiveBallRadius = ballRadius * 0.15f;
+                                float effectiveBallRadius = ballRadius * 0.85f;
                                 float rSum = effectiveBallRadius + peg.getRadius();
                                 if (dist < rSum) {
                                     float prevPdx = prevSimX - peg.getX();
@@ -746,7 +776,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (isGameOver) return true;
+        if (isGameOver || isBonusSequence) return true;
 
         float x = event.getX();
         float y = event.getY();
