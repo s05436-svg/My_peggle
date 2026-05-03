@@ -85,19 +85,24 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
         // but it's better to provide the exact absolute boundaries.
         // --------------------------------------------------
 
-        String systemPrompt = "You are a specialized 2D technical artist for a Peggle-like game. " +
-                "The screen is 2200x1000. Playable area: X=[500, 1700], Y=[150, 1000]. " +
-                "MAP CENTER: (1300, 500). All designs MUST be centered around this point. " +
-                "TECHNICAL CONSTRAINTS: " +
+        String systemPrompt = "You are an expert 2D Computational Geometry Engine for a Peggle-like game. " +
+                "Your task is to generate precise coordinates to form simple 2D outlines. " +
+                "ENVIRONMENT CONSTRAINTS: " +
+                "- Playable Area: X=[750, 1750], Y=[300, 1000]. " +
+                "- MAP CENTER: (1250, 650). All designs MUST be perfectly centered here. " +
                 "- Peg Radius: 25. " +
-                "- Min Distance between centers: 60 (avoid overlap). " +
-                "DESIGN RULES TO PREVENT CLUMPING: " +
-                "1. Outline Priority: Use ~70% of points to draw a clean, continuous 2D simple outline. " +
-                "2. Skeletal Drawing: Treat pegs as points on a line. Connect them mentally to form curves. " +
-                "3. NO MESH/GRID: Do not fill the interior with a dense grid. Add the minimal required sparse internal features (e.g., eyes, stripes, or structure). " +
-                "OUTPUT: " +
-                "Return ONLY a JSON array of coordinates: [{\"x\": x, \"y\": y}, ...]. " +
-                "Use 20 to 80 pegs for detail but keep the pegs with a minimal distance. " +
+                "- Must use as much area of the 'Playable Area' as possible for the shape to fit. " +
+                "- The bigger the y value, the lower the peg appears on the screen. " +
+                "- Minimum Distance between centers of pegs: 60 (avoid overlap). " +
+                "- No overlap between pegs no matter what. " +
+                "- Try spreading the shape horizontally and vertically as much a possible. " +
+                "DESIGN RULES: " +
+                "1. ONLY draw the outer silhouette/outline. NO internal grids, meshes, or fills. " +
+                "2. Treat the shape geometrically. Mentally define the vertices (corners) first, then distribute pegs evenly along the lines connecting them. " +
+                "OUTPUT FORMAT: " +
+                "You must output exactly two sections: " +
+                "PART 1: <plan> Briefly list the main vertices of the shape you are about to draw. </plan> " +
+                "PART 2: A strictly valid JSON array containing the final calculated coordinates. " +
                 "User request: " + userPrompt;
 
         setLoading(true);
@@ -106,7 +111,14 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
         GeminiManager.getInstance().sendText(systemPrompt, this, new GeminiManager.GeminiCallback() {
             @Override
             public void onSuccess(String result) {
-                String cleanResult = result.replace("```json", "").replace("```", "").trim();
+                String cleanResult = "";
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[[\\s\\S]*\\]");
+                java.util.regex.Matcher matcher = pattern.matcher(result);
+                if (matcher.find()) {
+                    cleanResult = matcher.group(0);
+                } else {
+                    cleanResult = result.replace("```json", "").replace("```", "").trim();
+                }
                 try {
                     JSONArray jsonArray = new JSONArray(cleanResult);
                     List<Map<String, Object>> coordinates = new ArrayList<>();
