@@ -10,6 +10,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -54,7 +55,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private float containerBallRadius;
     private int totalScore = 0;
     private int currentShotScore = 0;
-    private final int MAX_SCORE_BAR = 1500;
+    private volatile int MAX_SCORE_BAR = 0;
 
     private Paint circlePaint;
     private Paint textPaint;
@@ -160,6 +161,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private void initShapes(int viewWidth, int viewHeight) {
+        this.screenWidth = viewWidth;
+        this.screenHeight = viewHeight;
+
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.peggle_background_new);
         if (originalBackground != null) {
             backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, viewWidth, viewHeight, true);
@@ -230,7 +234,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private void loadLevelFromCoordinates(List<Map<String, Object>> coordinates) {
+        Log.d("CustomSurfaceView", "loadLevelFromCoordinates: Loading " + coordinates.size() + " pegs");
+        
+        // Reset game state
         pegs.clear();
+        totalScore = 0;
+        currentShotScore = 0;
+        isGameOver = false;
+        
         // Keep only non-peg shapes (cannon, bottomHole)
         List<BaseShape> nonPegShapes = new ArrayList<>();
         for (BaseShape shape : shapes) {
@@ -264,7 +275,27 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                 shapes.add(peg);
             }
         }
+        
         updatePegGrid();
+        calculateMaxScore();
+        Log.d("CustomSurfaceView", "MAX_SCORE_BAR set to: " + MAX_SCORE_BAR);
+    }
+
+    private void calculateMaxScore() {
+        int max = 0;
+        if (pegs.isEmpty()) {
+            MAX_SCORE_BAR = 1500;
+            return;
+        }
+        
+        for (Peg peg : pegs) {
+            if (peg.getType() == Peg.PegType.ORANGE) {
+                max += 100;
+            } else {
+                max += 10;
+            }
+        }
+        MAX_SCORE_BAR = (max > 0) ? max : 1500;
     }
 
     private void updatePegGrid() {
@@ -625,11 +656,15 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         float yPos = (screenHeight - barHeight) / 2f;
         RectF bgRect = new RectF(xPos, yPos, xPos + barWidth, yPos + barHeight);
         canvas.drawRoundRect(bgRect, 15, 15, barBackgroundPaint);
-        int displayScore = Math.min(totalScore + currentShotScore, MAX_SCORE_BAR);
-        float fillHeight = (displayScore / (float) MAX_SCORE_BAR) * barHeight;
+        
+        int currentTotal = totalScore + currentShotScore;
+        int displayScore = Math.min(currentTotal, MAX_SCORE_BAR);
+        
+        float fillHeight = (MAX_SCORE_BAR > 0) ? (displayScore / (float) MAX_SCORE_BAR) * barHeight : 0;
         RectF fillRect = new RectF(xPos, yPos + barHeight - fillHeight, xPos + barWidth, yPos + barHeight);
         canvas.drawRoundRect(fillRect, 15, 15, barFillPaint);
-        canvas.drawText("1500", xPos + barWidth / 2, yPos - 20, barTextPaint);
+
+        canvas.drawText(String.valueOf(MAX_SCORE_BAR), xPos + barWidth / 2, yPos - 20, barTextPaint);
         canvas.drawText(String.valueOf(displayScore), xPos + barWidth / 2, yPos + barHeight + 40, barTextPaint);
     }
 
