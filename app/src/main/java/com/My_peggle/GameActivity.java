@@ -1,5 +1,6 @@
 package com.My_peggle;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -30,6 +31,7 @@ public class GameActivity extends AppCompatActivity {
     private LinearLayout gameOverLayout;
     private TextView tvFinalScore;
     private Button btnBackToMenu;
+    private Button btnQuit;
     private FirebaseFirestore db;
 
     @Override
@@ -43,12 +45,18 @@ public class GameActivity extends AppCompatActivity {
         gameOverLayout = findViewById(R.id.gameOverLayout);
         tvFinalScore = findViewById(R.id.tvFinalScore);
         btnBackToMenu = findViewById(R.id.btnBackToMenu);
+        btnQuit = findViewById(R.id.btnQuit);
 
         gameOverLayout.setVisibility(View.GONE);
 
-        btnBackToMenu.setOnClickListener(new View.OnClickListener() {
+
+
+        btnQuit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Exit without saving score
+                Intent intent = new Intent(GameActivity.this, MenuActivity.class);
+                startActivity(intent);
                 finish();
             }
         });
@@ -61,6 +69,7 @@ public class GameActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        btnQuit.setVisibility(View.GONE); // Hide quit button when game ends
                         showGameOverUI(finalScore, isWin);
                     }
                 });

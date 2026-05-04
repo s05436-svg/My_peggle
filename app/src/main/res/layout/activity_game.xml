@@ -8,6 +8,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <Button
+        android:id="@+id/btnQuit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="16dp"
+        android:text="Quit"
+        android:backgroundTint="#88000000"
+        android:textColor="#FFFFFF" />
+
     <!-- Overlay container for Game Over elements -->
     <LinearLayout
         android:id="@+id/gameOverLayout"

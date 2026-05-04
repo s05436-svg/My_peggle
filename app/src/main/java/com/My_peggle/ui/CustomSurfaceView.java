@@ -359,7 +359,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             boolean caughtInHole = false;
             if (bottomHole != null) {
                 float dx = activeBall.getX() - bottomHole.getX();
-                if (Math.abs(dx) < bottomHole.getWidth() / 2 + activeBall.getRadius() && 
+                // Check if the ball's center hits the inner 7/10 of the hole (excluding 1.5/10 from each side)
+                float innerThreshold = bottomHole.getWidth() * 0.4f;
+                if (Math.abs(dx) < innerThreshold &&
                     activeBall.getY() > bottomHole.getY() - bottomHole.getHeight() / 2) {
                     caughtInHole = true;
                 }

@@ -30,7 +30,7 @@ import java.util.Map;
 public class AiLevelCreatorActivity extends AppCompatActivity {
 
     private EditText etAiPrompt;
-    private Button btnGenerateLevel, btnMyMaps;
+    private Button btnGenerateLevel, btnMyMaps, btnBackToMenu;
     private ProgressBar pbGenerating;
     private TextView tvStatus;
 
@@ -42,6 +42,7 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
         etAiPrompt = findViewById(R.id.etAiPrompt);
         btnGenerateLevel = findViewById(R.id.btnGenerateLevel);
         btnMyMaps = findViewById(R.id.btnMyMaps);
+        btnBackToMenu = findViewById(R.id.btnBackToMenu);
         pbGenerating = findViewById(R.id.pbGenerating);
         tvStatus = findViewById(R.id.tvStatus);
 
@@ -59,6 +60,14 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        btnBackToMenu.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(AiLevelCreatorActivity.this, MenuActivity.class));
+                finish();
+            }
+        });
     }
 
     private void generateLevel() {
@@ -71,7 +80,7 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
         // --- CALCULATION BASED ON GAME LOGIC (Ball.java) ---
         // In landscape mode, the game area is centered.
         // Screen width is usually around 2000-2400, height around 1000.
-        // Logic from Ball.java: 
+        // Logic from Ball.java:
         // gameAreaWidth = screenHeight;
         // gameLeft = (screenWidth - screenHeight) / 2;
         // gameRight = gameLeft + screenHeight;
@@ -88,8 +97,8 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
         String systemPrompt = "You are an expert 2D Computational Geometry Engine for a Peggle-like game. " +
                 "Your task is to generate precise coordinates to form simple 2D outlines. " +
                 "ENVIRONMENT CONSTRAINTS: " +
-                "- Playable Area: X=[750, 1750], Y=[300, 1000]. " +
-                "- MAP CENTER: (1250, 650). All designs MUST be perfectly centered here. " +
+                "- Playable Area: X=[750, 1700], Y=[300, 1000]. " +
+                "- MAP CENTER: (1225, 650). All designs MUST be perfectly centered here. " +
                 "- Peg Radius: 25. " +
                 "- Must use as much area of the 'Playable Area' as possible for the shape to fit. " +
                 "- The bigger the y value, the lower the peg appears on the screen. " +
@@ -103,6 +112,7 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
                 "You must output exactly two sections: " +
                 "PART 1: <plan> Briefly list the main vertices of the shape you are about to draw. </plan> " +
                 "PART 2: A strictly valid JSON array containing the final calculated coordinates. " +
+
                 "User request: " + userPrompt;
 
         setLoading(true);

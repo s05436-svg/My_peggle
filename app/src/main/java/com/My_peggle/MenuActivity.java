@@ -70,6 +70,7 @@ public class MenuActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(MenuActivity.this, GameActivity.class);
                 startActivity(intent);
+                // Removed finish() to allow returning to menu
             }
         });
 
@@ -78,6 +79,7 @@ public class MenuActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(MenuActivity.this, AiLevelCreatorActivity.class);
                 startActivity(intent);
+                // Removed finish() to allow returning to menu
             }
         });
 

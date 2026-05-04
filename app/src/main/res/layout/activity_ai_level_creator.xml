@@ -11,6 +11,14 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp">
 
+        <Button
+            android:id="@+id/btnBackToMenu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:text="Menu"
+            android:textSize="12sp" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -33,7 +41,7 @@
         android:id="@+id/etAiPrompt"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Describe how you want the level to look..."
+        android:hint="Describe a simple shape (e.g. Triangle, Heart). Complex shapes like animals are not allowed."
         android:textColor="@android:color/white"
         android:textColorHint="#CCCCCC"
         android:background="#80000000"

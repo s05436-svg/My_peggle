@@ -66,6 +66,18 @@ public class Ball extends BaseShape {
         return velocityY;
     }
 
+    public void setVelocityX(float vx) {
+        this.velocityX = vx;
+    }
+
+    public void setVelocityY(float vy) {
+        this.velocityY = vy;
+    }
+
+    public void reverseVelocityY() {
+        this.velocityY = -Math.abs(this.velocityY) * DAMPING_FACTOR;
+    }
+
     public void setTarget(float targetX, float targetY) {
         float dx = targetX - x;
         float dy = targetY - y;
