@@ -97,8 +97,8 @@ public class AiLevelCreatorActivity extends AppCompatActivity {
         String systemPrompt = "You are an expert 2D Computational Geometry Engine for a Peggle-like game. " +
                 "Your task is to generate precise coordinates to form simple 2D outlines. " +
                 "ENVIRONMENT CONSTRAINTS: " +
-                "- Playable Area: X=[750, 1700], Y=[300, 1000]. " +
-                "- MAP CENTER: (1225, 650). All designs MUST be perfectly centered here. " +
+                "- Playable Area: X=[700, 1700], Y=[300, 1000]. " +
+                "- MAP CENTER: (1200, 650). All designs MUST be perfectly centered here. " +
                 "- Peg Radius: 25. " +
                 "- Must use as much area of the 'Playable Area' as possible for the shape to fit. " +
                 "- The bigger the y value, the lower the peg appears on the screen. " +

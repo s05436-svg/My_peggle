@@ -162,12 +162,12 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private void initShapes(int viewWidth, int viewHeight) {
-        this.screenWidth = viewWidth;
+        this.screenWidth = viewWidth ;
         this.screenHeight = viewHeight;
 
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.peggle_background_new);
         if (originalBackground != null) {
-            backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, viewWidth, viewHeight, true);
+            backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, viewWidth- 1120, viewHeight, true);
         }
 
         Bitmap originalBallContainer = BitmapFactory.decodeResource(getResources(), R.drawable.ball_container);
@@ -177,7 +177,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
             int containerHeight = 1450;
             
             ballContainerBitmap = Bitmap.createScaledBitmap(originalBallContainer, containerWidth, containerHeight, true);
-            ballContainerX = ((viewWidth - containerWidth) / 4f) - 130f;
+            ballContainerX = ((viewWidth - containerWidth) / 4f) - 125f;
             ballContainerY = viewHeight - containerHeight + 200;
 
             containerBalls.clear();
@@ -634,7 +634,8 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         if (canvas == null) return;
 
         if (backgroundBitmap != null) {
-            canvas.drawBitmap(backgroundBitmap, 0, 0, null);
+            float bgX = (screenWidth - backgroundBitmap.getWidth()) / 2f;
+            canvas.drawBitmap(backgroundBitmap, bgX, 0, null);
         } else {
             canvas.drawColor(Color.DKGRAY);
         }
@@ -682,9 +683,9 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private void drawScoreBar(Canvas canvas) {
-        float barWidth = 60f;
-        float barHeight = screenHeight * 0.6f;
-        float xPos = screenWidth - barWidth - 60f;
+        float barWidth = 100f;
+        float barHeight = screenHeight * 0.9f;
+        float xPos = screenWidth - barWidth - 560f;
         float yPos = (screenHeight - barHeight) / 2f;
         RectF bgRect = new RectF(xPos, yPos, xPos + barWidth, yPos + barHeight);
         canvas.drawRoundRect(bgRect, 15, 15, barBackgroundPaint);

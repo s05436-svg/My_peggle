@@ -15,7 +15,6 @@
         android:layout_gravity="top|start"
         android:layout_margin="16dp"
         android:text="Quit"
-        android:backgroundTint="#88000000"
         android:textColor="#FFFFFF" />
 
     <!-- Overlay container for Game Over elements -->
