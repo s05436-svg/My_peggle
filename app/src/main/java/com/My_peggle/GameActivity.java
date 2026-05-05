@@ -4,21 +4,29 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.My_peggle.ui.CustomSurfaceView;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +37,22 @@ public class GameActivity extends AppCompatActivity {
     private static final String TAG = "GameActivity";
     private CustomSurfaceView gameView;
     private LinearLayout gameOverLayout;
+    private LinearLayout pauseMenuLayout;
+    private LinearLayout leaderboardOverlay;
     private TextView tvFinalScore;
     private Button btnBackToMenu;
     private Button btnQuit;
+    private Button btnPause;
+    private Button btnResume;
+    private Button btnLeaderboard;
+    private Button btnPauseQuit;
+    private Button btnBackFromLeaderboard;
+    
+    private RecyclerView rvGameLeaderboard;
+    private LeaderboardAdapter leaderboardAdapter;
+    private List<LeaderboardAdapter.UserScore> leaderboardList;
+    private ProgressBar pbGameLeaderboard;
+
     private FirebaseFirestore db;
 
     @Override
@@ -43,23 +64,69 @@ public class GameActivity extends AppCompatActivity {
         
         gameView = findViewById(R.id.gameView);
         gameOverLayout = findViewById(R.id.gameOverLayout);
+        pauseMenuLayout = findViewById(R.id.pauseMenuLayout);
+        leaderboardOverlay = findViewById(R.id.leaderboardOverlay);
         tvFinalScore = findViewById(R.id.tvFinalScore);
         btnBackToMenu = findViewById(R.id.btnBackToMenu);
         btnQuit = findViewById(R.id.btnQuit);
+        btnPause = findViewById(R.id.btnPause);
+        btnResume = findViewById(R.id.btnResume);
+        btnLeaderboard = findViewById(R.id.btnLeaderboard);
+        btnPauseQuit = findViewById(R.id.btnPauseQuit);
+        btnBackFromLeaderboard = findViewById(R.id.btnBackFromLeaderboard);
+
+        rvGameLeaderboard = findViewById(R.id.rvGameLeaderboard);
+        pbGameLeaderboard = findViewById(R.id.pbGameLeaderboard);
+
+        leaderboardList = new ArrayList<>();
+        leaderboardAdapter = new LeaderboardAdapter(leaderboardList);
+        rvGameLeaderboard.setLayoutManager(new LinearLayoutManager(this));
+        rvGameLeaderboard.setAdapter(leaderboardAdapter);
 
         gameOverLayout.setVisibility(View.GONE);
+        pauseMenuLayout.setVisibility(View.GONE);
+        leaderboardOverlay.setVisibility(View.GONE);
 
-
-
-        btnQuit.setOnClickListener(new View.OnClickListener() {
+        btnPause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Exit without saving score
+                pauseGame();
+            }
+        });
+
+        btnResume.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                resumeGame();
+            }
+        });
+
+        btnLeaderboard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showLeaderboardOverlay();
+            }
+        });
+
+        btnBackFromLeaderboard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideLeaderboardOverlay();
+            }
+        });
+
+        View.OnClickListener quitListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
                 Intent intent = new Intent(GameActivity.this, MenuActivity.class);
                 startActivity(intent);
                 finish();
             }
-        });
+        };
+
+        btnQuit.setOnClickListener(quitListener);
+        btnPauseQuit.setOnClickListener(quitListener);
+        btnBackToMenu.setOnClickListener(quitListener);
 
         gameView.setGameOverListener(new CustomSurfaceView.OnGameOverListener() {
             @Override
@@ -69,7 +136,8 @@ public class GameActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        btnQuit.setVisibility(View.GONE); // Hide quit button when game ends
+                        btnQuit.setVisibility(View.GONE);
+                        btnPause.setVisibility(View.GONE);
                         showGameOverUI(finalScore, isWin);
                     }
                 });
@@ -97,11 +165,7 @@ public class GameActivity extends AppCompatActivity {
                                 } else {
                                     loadUserLevelAndInitGame();
                                 }
-                            } else {
-
                             }
-                        } else {
-
                         }
                     })
                     .addOnFailureListener(e -> {
@@ -112,8 +176,77 @@ public class GameActivity extends AppCompatActivity {
         {
             loadUserLevelAndInitGame();
         }
+    }
 
+    private void pauseGame() {
+        gameView.setPaused(true);
+        pauseMenuLayout.setVisibility(View.VISIBLE);
+        pauseMenuLayout.bringToFront();
+    }
 
+    private void resumeGame() {
+        gameView.setPaused(false);
+        pauseMenuLayout.setVisibility(View.GONE);
+    }
+
+    private void showLeaderboardOverlay() {
+        pauseMenuLayout.setVisibility(View.GONE);
+        leaderboardOverlay.setVisibility(View.VISIBLE);
+        leaderboardOverlay.bringToFront();
+        fetchLeaderboard();
+    }
+
+    private void hideLeaderboardOverlay() {
+        leaderboardOverlay.setVisibility(View.GONE);
+        pauseMenuLayout.setVisibility(View.VISIBLE);
+    }
+
+    private void fetchLeaderboard() {
+        pbGameLeaderboard.setVisibility(View.VISIBLE);
+        db.collection("users")
+                .orderBy("rank", Query.Direction.DESCENDING)
+                .limit(50)
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        pbGameLeaderboard.setVisibility(View.GONE);
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            leaderboardList.clear();
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                String uid = document.getId();
+                                String username = document.getString("username");
+                                if (username == null) username = "Unknown";
+                                long rank = 0;
+                                if (document.contains("rank")) {
+                                    rank = document.getLong("rank");
+                                }
+                                long level = 0;
+                                if (document.contains("level")) {
+                                    level = document.getLong("level");
+                                }
+                                leaderboardList.add(new LeaderboardAdapter.UserScore(uid, username, rank, level));
+                            }
+                            leaderboardAdapter.notifyDataSetChanged();
+                        } else {
+                            Log.e(TAG, "Error fetching leaderboard", task.getException());
+                            Toast.makeText(GameActivity.this, "Failed to load leaderboard", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (leaderboardOverlay.getVisibility() == View.VISIBLE) {
+            hideLeaderboardOverlay();
+        } else if (pauseMenuLayout.getVisibility() == View.VISIBLE) {
+            resumeGame();
+        } else if (gameOverLayout.getVisibility() != View.VISIBLE) {
+            pauseGame();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     private void loadUserLevelAndInitGame() {

@@ -94,6 +94,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private OnGameOverListener gameOverListener;
     private boolean isGameOver = false;
     private boolean isBonusSequence = false;
+    private boolean isPaused = false;
 
     public CustomSurfaceView(Context context) {
         super(context);
@@ -112,6 +113,14 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     
     public void setGameOverListener(OnGameOverListener listener) {
         this.gameOverListener = listener;
+    }
+
+    public void setPaused(boolean paused) {
+        this.isPaused = paused;
+    }
+
+    public boolean isPaused() {
+        return isPaused;
     }
 
     public int getTotalScore() {
@@ -162,12 +171,13 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     private void initShapes(int viewWidth, int viewHeight) {
-        this.screenWidth = viewWidth ;
+        this.screenWidth = viewWidth;
         this.screenHeight = viewHeight;
 
+        float gameAreaWidth = viewHeight; 
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.peggle_background_new);
         if (originalBackground != null) {
-            backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, viewWidth- 1120, viewHeight, true);
+            backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, (int) gameAreaWidth, viewHeight, true);
         }
 
         Bitmap originalBallContainer = BitmapFactory.decodeResource(getResources(), R.drawable.ball_container);
@@ -205,7 +215,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         bottomHole = new BottomHole(getContext(), viewWidth / 2f, viewHeight - 30, holeWidth, holeHeight);
         shapes.add(bottomHole);
 
-        // Grid Initialization
+        // Grid Optimization
         gridCols = (viewWidth / CELL_SIZE) + 1;
         gridRows = (viewHeight / CELL_SIZE) + 1;
         pegGrid = new ArrayList[gridCols][gridRows];
@@ -317,7 +327,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     }
 
     public void update() {
-        if (isGameOver) return;
+        if (isGameOver || isPaused) return;
 
         // If in bonus sequence, keep loading balls until none left
         if (isBonusSequence) {
@@ -633,11 +643,13 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         super.draw(canvas);
         if (canvas == null) return;
 
+        // Background outside game area
+        canvas.drawColor(Color.BLACK);
+
         if (backgroundBitmap != null) {
-            float bgX = (screenWidth - backgroundBitmap.getWidth()) / 2f;
-            canvas.drawBitmap(backgroundBitmap, bgX, 0, null);
-        } else {
-            canvas.drawColor(Color.DKGRAY);
+            float gameAreaWidth = screenHeight;
+            float gameLeft = (screenWidth - gameAreaWidth) / 2f;
+            canvas.drawBitmap(backgroundBitmap, gameLeft, 0, null);
         }
 
         drawHoleGlow(canvas);
@@ -779,7 +791,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (isGameOver || isBonusSequence) return true;
+        if (isGameOver || isBonusSequence || isPaused) return true;
 
         float x = event.getX();
         float y = event.getY();
