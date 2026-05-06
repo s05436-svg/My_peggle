@@ -36,7 +36,7 @@
         <!-- כפתור Pause - שומר על העיצוב הסגול המקורי, ממוקם על גבי האיור המתאים ברקע -->
         <Button
             android:id="@+id/btnPause"
-            android:layout_width="100dp"
+            android:layout_width="120dp"
             android:layout_height="60dp"
             android:layout_below="@id/btnQuit"
             android:layout_centerHorizontal="true"

@@ -593,7 +593,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
                             if (activeBall.reflect(peg)) {
                                 if (!peg.isHit()) {
                                     if (peg.getType() == Peg.PegType.ORANGE) {
-                                        currentShotScore += 100;
+                                        currentShotScore += 50;
                                     } else {
                                         currentShotScore += 10;
                                     }
