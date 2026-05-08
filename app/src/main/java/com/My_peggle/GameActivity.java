@@ -236,18 +236,7 @@ public class GameActivity extends AppCompatActivity {
                 });
     }
 
-    @Override
-    public void onBackPressed() {
-        if (leaderboardOverlay.getVisibility() == View.VISIBLE) {
-            hideLeaderboardOverlay();
-        } else if (pauseMenuLayout.getVisibility() == View.VISIBLE) {
-            resumeGame();
-        } else if (gameOverLayout.getVisibility() != View.VISIBLE) {
-            pauseGame();
-        } else {
-            super.onBackPressed();
-        }
-    }
+
 
     private void loadUserLevelAndInitGame() {
         String uid = FirebaseAuth.getInstance().getUid();
