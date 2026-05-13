@@ -39,6 +39,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private final List<Ball> enteringBalls = new ArrayList<>();
     private boolean shapesInitialized = false;
     private Bitmap backgroundBitmap;
+    private Bitmap buttonsBackgroundBitmap;
     private Bitmap ballContainerBitmap;
     private float ballContainerX;
     private float ballContainerY;
@@ -177,16 +178,26 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         float gameAreaWidth = viewHeight; 
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.peggle_background_new);
         if (originalBackground != null) {
-            backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, (int) gameAreaWidth, viewHeight, true);
+            backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, (int) gameAreaWidth + 100, viewHeight, true);
+        }
+
+        Bitmap originalButtonsBackground = BitmapFactory.decodeResource(getResources(), R.drawable.buttons_background);
+        if (originalButtonsBackground != null) {
+            float gameLeft = (viewWidth - gameAreaWidth) / 2f;
+            float sideWidth = viewWidth - (gameLeft + gameAreaWidth + 100);
+            if (sideWidth > 0) {
+                buttonsBackgroundBitmap = Bitmap.createScaledBitmap(originalButtonsBackground, (int) sideWidth, viewHeight, true);
+            }
         }
 
         Bitmap originalBallContainer = BitmapFactory.decodeResource(getResources(), R.drawable.ball_container);
         if (originalBallContainer != null) {
             float ballDiameter = 30f; 
             int containerWidth = (int) (ballDiameter * 18.0f); 
+            int containerWidthInt = (int) (ballDiameter * 18.0f);
             int containerHeight = 1450;
             
-            ballContainerBitmap = Bitmap.createScaledBitmap(originalBallContainer, containerWidth, containerHeight, true);
+            ballContainerBitmap = Bitmap.createScaledBitmap(originalBallContainer, containerWidthInt, containerHeight, true);
             ballContainerX = ((viewWidth - containerWidth) / 4f) - 125f;
             ballContainerY = viewHeight - containerHeight + 200;
 
@@ -340,7 +351,7 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
         float gameAreaWidth = screenHeight;
         float gameLeft = (screenWidth - gameAreaWidth) / 2;
-        float gameRight = gameLeft + gameAreaWidth;
+        float gameRight = gameLeft + gameAreaWidth + 100;
         
         if (bottomHole != null) {
             bottomHole.update(gameLeft, gameRight);
@@ -646,10 +657,16 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         // Background outside game area
         canvas.drawColor(Color.BLACK);
 
+        float gameAreaWidth = screenHeight;
+        float gameLeft = (screenWidth - gameAreaWidth) / 2f;
+        float gameRight = gameLeft + gameAreaWidth;
+
         if (backgroundBitmap != null) {
-            float gameAreaWidth = screenHeight;
-            float gameLeft = (screenWidth - gameAreaWidth) / 2f;
             canvas.drawBitmap(backgroundBitmap, gameLeft, 0, null);
+        }
+
+        if (buttonsBackgroundBitmap != null) {
+            canvas.drawBitmap(buttonsBackgroundBitmap, gameRight + 100, 0, null);
         }
 
         drawHoleGlow(canvas);
