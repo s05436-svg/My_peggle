@@ -38,20 +38,18 @@ public class GameActivity extends AppCompatActivity {
     private CustomSurfaceView gameView;
     private LinearLayout gameOverLayout;
     private LinearLayout pauseMenuLayout;
-    private LinearLayout leaderboardOverlay;
     private TextView tvFinalScore;
     private Button btnBackToMenu;
     private Button btnQuit;
     private Button btnPause;
     private Button btnResume;
-    private Button btnLeaderboard;
+    private Button btnRestart;
     private Button btnPauseQuit;
-    private Button btnBackFromLeaderboard;
     
-    private RecyclerView rvGameLeaderboard;
-    private LeaderboardAdapter leaderboardAdapter;
-    private List<LeaderboardAdapter.UserScore> leaderboardList;
-    private ProgressBar pbGameLeaderboard;
+    // Side Leaderboard
+    private RecyclerView rvSideLeaderboard;
+    private LeaderboardAdapter sideLeaderboardAdapter;
+    private List<LeaderboardAdapter.UserScore> sideLeaderboardList;
 
     private FirebaseFirestore db;
 
@@ -65,27 +63,23 @@ public class GameActivity extends AppCompatActivity {
         gameView = findViewById(R.id.gameView);
         gameOverLayout = findViewById(R.id.gameOverLayout);
         pauseMenuLayout = findViewById(R.id.pauseMenuLayout);
-        leaderboardOverlay = findViewById(R.id.leaderboardOverlay);
         tvFinalScore = findViewById(R.id.tvFinalScore);
         btnBackToMenu = findViewById(R.id.btnBackToMenu);
         btnQuit = findViewById(R.id.btnQuit);
         btnPause = findViewById(R.id.btnPause);
         btnResume = findViewById(R.id.btnResume);
-        btnLeaderboard = findViewById(R.id.btnLeaderboard);
+        btnRestart = findViewById(R.id.btnRestart);
         btnPauseQuit = findViewById(R.id.btnPauseQuit);
-        btnBackFromLeaderboard = findViewById(R.id.btnBackFromLeaderboard);
 
-        rvGameLeaderboard = findViewById(R.id.rvGameLeaderboard);
-        pbGameLeaderboard = findViewById(R.id.pbGameLeaderboard);
-
-        leaderboardList = new ArrayList<>();
-        leaderboardAdapter = new LeaderboardAdapter(leaderboardList);
-        rvGameLeaderboard.setLayoutManager(new LinearLayoutManager(this));
-        rvGameLeaderboard.setAdapter(leaderboardAdapter);
+        // Setup Side Leaderboard
+        rvSideLeaderboard = findViewById(R.id.rvSideLeaderboard);
+        sideLeaderboardList = new ArrayList<>();
+        sideLeaderboardAdapter = new LeaderboardAdapter(sideLeaderboardList);
+        rvSideLeaderboard.setLayoutManager(new LinearLayoutManager(this));
+        rvSideLeaderboard.setAdapter(sideLeaderboardAdapter);
 
         gameOverLayout.setVisibility(View.GONE);
         pauseMenuLayout.setVisibility(View.GONE);
-        leaderboardOverlay.setVisibility(View.GONE);
 
         btnPause.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -101,17 +95,10 @@ public class GameActivity extends AppCompatActivity {
             }
         });
 
-        btnLeaderboard.setOnClickListener(new View.OnClickListener() {
+        btnRestart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showLeaderboardOverlay();
-            }
-        });
-
-        btnBackFromLeaderboard.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideLeaderboardOverlay();
+                restartGame();
             }
         });
 
@@ -139,10 +126,14 @@ public class GameActivity extends AppCompatActivity {
                         btnQuit.setVisibility(View.GONE);
                         btnPause.setVisibility(View.GONE);
                         showGameOverUI(finalScore, isWin);
+                        fetchLeaderboard(); // Refresh leaderboard on game over
                     }
                 });
             }
         });
+
+        // Load side leaderboard immediately
+        fetchLeaderboard();
 
         // Check if a custom level was passed
         int customLevel = getIntent().getIntExtra("CUSTOM_LEVEL", -1);
@@ -189,30 +180,22 @@ public class GameActivity extends AppCompatActivity {
         pauseMenuLayout.setVisibility(View.GONE);
     }
 
-    private void showLeaderboardOverlay() {
-        pauseMenuLayout.setVisibility(View.GONE);
-        leaderboardOverlay.setVisibility(View.VISIBLE);
-        leaderboardOverlay.bringToFront();
-        fetchLeaderboard();
-    }
-
-    private void hideLeaderboardOverlay() {
-        leaderboardOverlay.setVisibility(View.GONE);
-        pauseMenuLayout.setVisibility(View.VISIBLE);
+    private void restartGame() {
+        Intent intent = getIntent();
+        finish();
+        startActivity(intent);
     }
 
     private void fetchLeaderboard() {
-        pbGameLeaderboard.setVisibility(View.VISIBLE);
         db.collection("users")
                 .orderBy("rank", Query.Direction.DESCENDING)
-                .limit(50)
+                .limit(20)
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        pbGameLeaderboard.setVisibility(View.GONE);
                         if (task.isSuccessful() && task.getResult() != null) {
-                            leaderboardList.clear();
+                            List<LeaderboardAdapter.UserScore> newList = new ArrayList<>();
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 String uid = document.getId();
                                 String username = document.getString("username");
@@ -225,12 +208,16 @@ public class GameActivity extends AppCompatActivity {
                                 if (document.contains("level")) {
                                     level = document.getLong("level");
                                 }
-                                leaderboardList.add(new LeaderboardAdapter.UserScore(uid, username, rank, level));
+                                newList.add(new LeaderboardAdapter.UserScore(uid, username, rank, level));
                             }
-                            leaderboardAdapter.notifyDataSetChanged();
+                            
+                            // Update side list
+                            sideLeaderboardList.clear();
+                            sideLeaderboardList.addAll(newList);
+                            sideLeaderboardAdapter.notifyDataSetChanged();
+                            
                         } else {
                             Log.e(TAG, "Error fetching leaderboard", task.getException());
-                            Toast.makeText(GameActivity.this, "Failed to load leaderboard", Toast.LENGTH_SHORT).show();
                         }
                     }
                 });

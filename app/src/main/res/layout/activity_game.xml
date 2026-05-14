@@ -48,6 +48,77 @@
             android:textAllCaps="false" />
     </RelativeLayout>
 
+    <!-- Leaderboard Panel on the right - Width 200dp -->
+    <LinearLayout
+        android:id="@+id/rightLeaderboardPanel"
+        android:layout_width="200dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="#AA000000"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="16dp"
+            android:text="LEADERBOARD"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#40FFFFFF"
+            android:orientation="horizontal"
+            android:padding="8dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="#"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:text="Player"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.5"
+                android:gravity="center"
+                android:text="Lvl"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:gravity="end"
+                android:text="Pts"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvSideLeaderboard"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
     <!-- Pause Menu Overlay -->
     <LinearLayout
         android:id="@+id/pauseMenuLayout"
@@ -77,116 +148,17 @@
             android:text="Resume" />
 
         <Button
-            android:id="@+id/btnLeaderboard"
+            android:id="@+id/btnRestart"
             android:layout_width="200dp"
             android:layout_height="60dp"
             android:layout_marginBottom="16dp"
-            android:text="Leaderboard" />
+            android:text="Restart" />
 
         <Button
             android:id="@+id/btnPauseQuit"
             android:layout_width="200dp"
             android:layout_height="60dp"
             android:text="Quit" />
-    </LinearLayout>
-
-    <!-- Leaderboard Overlay -->
-    <LinearLayout
-        android:id="@+id/leaderboardOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#CC000000"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="20dp"
-        android:visibility="gone"
-        android:clickable="true"
-        android:focusable="true">
-
-        <RelativeLayout
-            android:layout_width="500dp"
-            android:layout_height="400dp"
-            android:background="#F0222222"
-            android:padding="16dp">
-
-            <TextView
-                android:id="@+id/tvLeaderboardTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_marginBottom="16dp"
-                android:text="LEADERBOARD"
-                android:textColor="#FFFFFF"
-                android:textSize="28sp"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/btnBackFromLeaderboard"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"
-                android:layout_alignParentEnd="true"
-                android:text="Back" />
-
-            <LinearLayout
-                android:id="@+id/headerLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/tvLeaderboardTitle"
-                android:background="#40FFFFFF"
-                android:orientation="horizontal"
-                android:padding="8dp">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="#"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="3"
-                    android:text="Player"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1.5"
-                    android:gravity="center"
-                    android:text="Lvl"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="2"
-                    android:gravity="end"
-                    android:text="Points"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="250dp"
-                android:layout_below="@id/headerLayout"
-                android:layout_marginTop="8dp">
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvGameLeaderboard"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scrollbars="vertical" />
-                <ProgressBar
-                    android:id="@+id/pbGameLeaderboard"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:visibility="gone" />
-            </FrameLayout>
-        </RelativeLayout>
     </LinearLayout>
 
     <!-- Overlay container for Game Over elements -->

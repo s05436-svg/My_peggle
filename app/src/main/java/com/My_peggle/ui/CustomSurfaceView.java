@@ -39,7 +39,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
     private final List<Ball> enteringBalls = new ArrayList<>();
     private boolean shapesInitialized = false;
     private Bitmap backgroundBitmap;
-    private Bitmap buttonsBackgroundBitmap;
     private Bitmap ballContainerBitmap;
     private float ballContainerX;
     private float ballContainerY;
@@ -179,15 +178,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
         Bitmap originalBackground = BitmapFactory.decodeResource(getResources(), R.drawable.peggle_background_new);
         if (originalBackground != null) {
             backgroundBitmap = Bitmap.createScaledBitmap(originalBackground, (int) gameAreaWidth + 100, viewHeight, true);
-        }
-
-        Bitmap originalButtonsBackground = BitmapFactory.decodeResource(getResources(), R.drawable.buttons_background);
-        if (originalButtonsBackground != null) {
-            float gameLeft = (viewWidth - gameAreaWidth) / 2f;
-            float sideWidth = viewWidth - (gameLeft + gameAreaWidth + 100);
-            if (sideWidth > 0) {
-                buttonsBackgroundBitmap = Bitmap.createScaledBitmap(originalButtonsBackground, (int) sideWidth, viewHeight, true);
-            }
         }
 
         Bitmap originalBallContainer = BitmapFactory.decodeResource(getResources(), R.drawable.ball_container);
@@ -663,10 +653,6 @@ public class CustomSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
         if (backgroundBitmap != null) {
             canvas.drawBitmap(backgroundBitmap, gameLeft, 0, null);
-        }
-
-        if (buttonsBackgroundBitmap != null) {
-            canvas.drawBitmap(buttonsBackgroundBitmap, gameRight + 100, 0, null);
         }
 
         drawHoleGlow(canvas);
